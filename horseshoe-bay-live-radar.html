@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TNS Texas Weather Live Pro</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101820;font-family:Arial,Helvetica,sans-serif}
+#mapWrap{position:absolute;inset:0 25% 0 0;background:#75838d;border-right:3px solid #dbe5eb;overflow:hidden}#map{position:absolute;inset:164px 0 0;background:#75838d}
+.leaflet-control-container{display:none!important}.leaflet-container{background:#75838d!important}.leaflet-tile{filter:none}
+#hud{position:absolute;inset:0;z-index:1000;pointer-events:none}.topbar{position:absolute;left:0;right:0;top:0;height:72px;background:linear-gradient(180deg,rgba(4,12,20,.94),rgba(4,12,20,.62),transparent);padding:10px 16px;color:#fff;text-shadow:2px 2px 3px #000}
+#title{font:1000 27px/1 Arial Black,Arial;letter-spacing:.6px}#sub{margin-top:5px;font:900 14px Arial;color:#d8e7f2;letter-spacing:.8px}#radarTime{color:#ffe85c}#scanDot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff3030;margin-right:7px;box-shadow:0 0 8px #ff3030;animation:pulse 1.35s infinite}@keyframes pulse{50%{opacity:.35}}#regionBug{position:absolute;top:94px;left:50%;transform:translateX(-50%);z-index:900;background:rgba(5,17,27,.88);border:1px solid rgba(255,255,255,.28);border-left:6px solid #4fc3ff;padding:9px 20px 8px;color:#fff;font:1000 24px/1 Arial Black,Arial;letter-spacing:1.2px;text-shadow:0 2px 3px #000;opacity:0;transition:opacity .35s;pointer-events:none;white-space:nowrap}#regionBug.show{opacity:1}
+#mode{position:absolute;left:16px;bottom:17px;color:#fff;background:rgba(4,13,22,.90);border:2px solid #dce9f1;border-radius:4px;padding:9px 14px;box-shadow:0 4px 12px #0009;font:1000 16px Arial Black,Arial;letter-spacing:.4px}
+#legend{position:absolute;right:12px;bottom:15px;background:rgba(4,13,22,.88);border:1px solid #dce9f1;border-radius:4px;padding:7px 10px;color:#fff;font:900 11px Arial;box-shadow:0 3px 9px #0008}.lr{display:flex;align-items:center;gap:7px;margin:3px 0}.sw{width:25px;height:5px}.g{background:#18e979}.o{background:#ff8a00}.r{background:#ff1820}.b{background:#800020}.y{background:#ffe600}.p{background:#b653ff}
+#load{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#06121ee8;color:#fff;border:2px solid #fff;border-radius:4px;padding:12px 18px;font:1000 14px Arial;transition:opacity .35s}
+.cityLabel{background:transparent;border:0;color:#fff;text-shadow:-2px -2px 2px #17212a,2px -2px 2px #17212a,-2px 2px 2px #17212a,2px 2px 2px #17212a,0 3px 4px #000;font:1000 16px Arial Black,Arial;white-space:nowrap;text-align:center}.tempLabel{background:transparent;border:0;color:#fff;text-shadow:-2px -2px 2px #101820,2px -2px 2px #101820,-2px 2px 2px #101820,2px 2px 2px #101820,0 3px 4px #000;font:1000 38px/42px Arial Black,Arial;white-space:nowrap;text-align:center}
+#side{position:absolute;right:0;top:0;bottom:0;width:25%;background:#101820;color:#fff;overflow:hidden}#sideHead{height:15%;min-height:105px;background:linear-gradient(135deg,#b30c18,#5d0710 60%,#1d0508);border-bottom:3px solid #eaf2f6;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;text-shadow:2px 2px 3px #000}.small{font:1000 clamp(14px,1.05vw,22px) Arial;letter-spacing:1.8px}.big{font:italic 1000 clamp(30px,2.6vw,56px)/.95 Arial Black,Arial}.tiny{font:900 clamp(12px,.85vw,18px) Arial;margin-top:7px;letter-spacing:.7px}
+#cards{height:80%;display:grid;grid-template-rows:repeat(3,1fr);background:#18242e}.card{position:relative;overflow:hidden;border-bottom:3px solid rgba(255,255,255,.82);padding:18px 15px 14px 22px;display:flex;flex-direction:column;justify-content:center;text-shadow:1px 2px 3px #000}.card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:11px;background:#a8bac6}.event{font:1000 clamp(26px,2.15vw,46px)/1.03 Arial Black,Arial;letter-spacing:.3px;text-transform:uppercase;overflow-wrap:break-word}.area{font:900 clamp(18px,1.3vw,28px)/1.12 Arial;margin-top:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.exp{display:inline-block;align-self:flex-start;background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.3);border-radius:3px;padding:5px 8px;margin-top:10px;font:1000 clamp(16px,1.05vw,23px) Arial;letter-spacing:.4px}
+.pds{background:linear-gradient(110deg,#8434b4,#42145f)}.pds:before{background:#dc9cff}.tornado{background:linear-gradient(110deg,#dc1c26,#71060c)}.tornado:before{background:#ff656b}.torwatch{background:linear-gradient(110deg,#800020,#420010)}.torwatch:before{background:#b63751}.svrwatch{background:linear-gradient(110deg,#a18b00,#574900)}.svrwatch:before{background:#ffe600}.severe{background:linear-gradient(110deg,#dc7811,#773603)}.severe:before{background:#ffb04b}.flash,.flood{background:linear-gradient(110deg,#0a9555,#06492c)}.flash:before,.flood:before{background:#55ffad}.other,.watch{background:linear-gradient(110deg,#435564,#24333e)}
+#foot{position:absolute;bottom:0;left:0;right:0;height:5%;min-height:30px;background:#050a0e;border-top:1px solid #5c6b76;display:flex;align-items:center;justify-content:center;font:1000 10px Arial;letter-spacing:.8px;color:#d3dde4}
+#spcStatus{color:#fff;font:1000 clamp(20px,1.65vw,34px)/1.1 Arial Black,Arial;letter-spacing:.4px;text-shadow:2px 2px 3px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#spcKey{margin-top:7px;padding-top:6px;border-top:1px solid #789;font-size:10px}.spcSw{display:inline-block;width:9px;height:9px;margin:0 3px 0 5px}
+
+.topbar{height:164px;background:linear-gradient(180deg,#04101bf5 0%,#04101bf0 85%,transparent);padding:8px 16px}
+#conditionsStrip{display:flex;gap:10px;align-items:stretch;height:54px;margin-top:7px;overflow:hidden;border-top:1px solid #557086;border-bottom:1px solid #557086;background:#10283be8}
+.stripTag{flex:0 0 105px;display:flex;align-items:center;justify-content:center;background:#075b86;color:#fff;font:1000 13px/1.1 Arial;text-align:center;letter-spacing:.5px}
+.obsCard{flex:1;min-width:0;padding:5px 8px;color:#fff;display:flex;flex-direction:column;justify-content:center}.obsMain{font:1000 clamp(15px,1.1vw,23px)/1.15 Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.obsDetail{font:900 clamp(11px,.78vw,16px)/1.15 Arial;color:#d6e9f7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.obsTemp{margin:0 8px}
+#nwsStrip{display:flex;height:34px;overflow:hidden;margin-top:5px;border-bottom:1px solid #557086;background:#091a2ce8}#nwsTag{background:#9b2425;flex:0 0 105px;font-size:12px}#nwsWindow{flex:1;min-width:0;overflow:hidden;position:relative;display:flex;align-items:center}#nwsText{width:100%;min-width:0;padding:1px 12px;color:#fff}#nwsSource{font:900 10px/10px Arial;color:#a9d9f3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#nwsSentence{font:900 clamp(13px,.9vw,19px)/1.05 Arial;white-space:nowrap;overflow:hidden}
+#sub{margin-top:5px;font-size:12px}#regionBug{top:177px}
+</style><style>
+html,body{background:#e8eef1}
+#mapWrap{right:29%;border-right:2px solid #c7d8e2;background:#e8eef1}
+#side{width:29%}
+#map{inset:48px 0 0}
+.topbar{height:48px;padding:8px 12px;background:#09273e}
+#conditionsStrip,#nwsStrip,#sub,#regionBug,#legend,#mode,#load{display:none!important}
+#spcStatus{font:800 clamp(12px,1.25vw,18px)/30px Arial,sans-serif;letter-spacing:0;white-space:nowrap}
+.leaflet-control-container{display:block!important}
+.leaflet-control-attribution{font-size:9px!important}
+#sideHead{height:85px;min-height:85px}
+#sideHead .small{font-size:11px;letter-spacing:1px}
+#sideHead .big{font-size:clamp(18px,2vw,29px)}
+#sideHead .tiny{font-size:10px}
+#cards{height:calc(100% - 115px)}
+.card{padding:9px 9px 9px 15px;border-bottom-width:1px}
+.card:before{width:5px}
+.event{font-size:clamp(12px,1.4vw,20px);line-height:1.12}
+.area{font-size:clamp(11px,1.1vw,15px);margin-top:6px;-webkit-line-clamp:3}
+.exp{font-size:10px;margin-top:6px;padding:3px 5px}
+#foot{height:30px;font-size:8px;letter-spacing:0;padding:0 6px;text-align:center}
+.cityLabel{font-size:12px}
+.tempLabel{font-size:20px}
+@media(max-width:700px){#mapWrap{right:0;bottom:210px;border-right:0;border-bottom:2px solid #c7d8e2}#side{left:0;right:0;top:auto;bottom:0;width:100%;height:210px}#sideHead{height:34px;min-height:34px;flex-direction:row;gap:8px}#sideHead .big{font-size:16px}#sideHead .small,#sideHead .tiny{display:none}#cards{height:calc(100% - 54px);grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:1fr}.card{border-right:1px solid #fff4;padding:6px}.event{font-size:11px}.area{font-size:10px;margin-top:3px;-webkit-line-clamp:3}.exp{font-size:9px}#foot{height:20px;font-size:7px}}
+</style><style id="spcHoverStyles">
+#spcHover{position:absolute;left:8px;top:51%;transform:translateY(-50%);z-index:1150;display:flex;align-items:center;gap:0;opacity:.4;transition:opacity .2s}
+#spcHover:hover,#spcHover:focus-within{opacity:1}
+#spcHandle{background:#123b5b;color:white;border:1px solid #9ab9cb;border-radius:5px;padding:11px 7px;font:bold 12px Arial;cursor:pointer;writing-mode:vertical-rl;letter-spacing:1px}
+#spcOptions{display:none;background:rgba(8,27,43,.96);border:1px solid #7894a9;border-radius:6px;padding:9px;min-width:165px;box-shadow:0 4px 16px #0008}
+#spcHover:hover #spcOptions,#spcHover:focus-within #spcOptions,#spcHover.open #spcOptions{display:block}
+#spcOptions button{display:block;width:100%;text-align:left;margin:3px 0;padding:9px;color:#fff;background:#173e58;border:1px solid #52728a;border-radius:4px;cursor:pointer;font:bold 12px Arial}
+#spcOptions button:hover,#spcOptions button[aria-pressed=true]{background:#126c99}
+.layerSeparator{border-top:1px solid #668095;margin-top:9px;padding:9px 3px 3px;color:#b9d7e9;font:bold 10px Arial;letter-spacing:.6px}#spcMessage{color:#dceaf3;font:11px/1.4 Arial;padding:5px 2px;max-width:190px}
+@media(max-width:700px){#spcHover{left:3px;top:60%}#spcHandle{font-size:10px;padding:8px 5px}}
+</style><style id="radarDotStyles">
+#radarBadge{position:absolute;bottom:16px;right:12px;z-index:1100;background:transparent;border:0;padding:0;display:flex;align-items:center;gap:0;opacity:.12;transition:opacity .2s ease}#radarBadge:hover,#radarBadge:focus-within{opacity:1}
+#mrmsReset{border:1px solid #fff8;background:#075586;color:#fff;border-radius:50%;width:32px;height:32px;padding:0;cursor:pointer;font:bold 20px Arial;box-shadow:0 2px 7px #0004}#mrmsReset:hover,#mrmsReset:focus{background:#003e68}#radarSelection{display:none}#radarBadge:hover #radarSelection,#radarBadge:focus-within #radarSelection{display:block;max-width:210px;margin-left:6px;padding:6px 8px;background:#fff;color:#244b66;border-radius:5px;box-shadow:0 2px 8px #0003}
+.leaflet-interactive:focus{outline:2px solid #ffbf00}
+@media(max-width:700px){#radarBadge{bottom:10px;right:8px;opacity:.4}#mrmsReset{width:30px;height:30px}}
+</style><style id="localBroadcastStyles">
+#localAlert{position:absolute;top:43px;left:50%;transform:translateX(-50%);width:min(620px,calc(100% - 130px));z-index:1120;display:none;pointer-events:auto;font-family:Arial,Helvetica,sans-serif;color:#fff;text-shadow:0 1px 2px #0009;filter:drop-shadow(0 3px 8px #0008)}
+#localAlert.visible{display:block}#localAlertTop{background:var(--alert-color,#b45309);border:2px solid #fff;border-radius:7px 7px 0 0;padding:5px 9px;display:flex;justify-content:space-between;align-items:center;gap:10px}#localAlertTitle{font-size:clamp(13px,1.6vw,19px);font-weight:900;line-height:1.05;letter-spacing:.3px}#localAlertCount{font-size:11px;font-weight:800;white-space:nowrap}#localAlertInfo{background:#160e0eea;border:1px solid #fff9;border-top:0;border-radius:0 0 6px 6px;padding:5px 12px;font-size:clamp(10px,1vw,12px);font-weight:800;line-height:1.4;display:flex;gap:5px 15px;flex-wrap:wrap}#localAlertControls{display:flex;align-items:center;gap:5px}#localAlertControls button{background:#0005;color:white;border:1px solid #fff8;border-radius:4px;cursor:pointer;font-weight:900;padding:3px 7px;font-size:13px}#localAlertControls button:disabled{opacity:.35;cursor:default}#localAlertDetails{display:none;background:#101e2cf2;padding:9px 12px;font-size:12px;line-height:1.45;max-height:150px;overflow:auto;border:1px solid #ffffff80}#localAlert.details-open #localAlertDetails{display:block}#localAlertStatus{position:absolute;left:50%;top:43px;transform:translateX(-50%);z-index:1105;background:#0b263bdc;color:#e4f3ff;border:1px solid #8ab2c9;border-radius:4px;padding:5px 12px;font:bold 11px Arial;pointer-events:none}#localAlertStatus[hidden]{display:none!important}
+@media(max-width:700px){#localAlert{top:38px;width:calc(100% - 65px);left:calc(50% + 13px)}#localAlertTop{padding:5px 7px}#localAlertInfo{padding:4px 7px}#localAlertCount{font-size:9px}#localAlertStatus{top:38px;left:calc(50% + 12px);font-size:9px}}
+/* Blank left map panel while keeping the right-hand live alert system and its data engine intact. */
+#mapWrap{background:#f5f7fa!important}
+#mapWrap>*:not(#hbnReplacementStudio){visibility:hidden!important;pointer-events:none!important}
+#mapWrap>#hbnReplacementStudio,#mapWrap>#hbnReplacementStudio *{visibility:visible!important;pointer-events:auto!important}
+</style><style id="hbn-studio-swap">
+#hbnReplacementStudio{position:absolute;inset:0;z-index:2500;background:#082c54;display:flex;flex-direction:column}
+#hbnReplacementStudio .studioTitle{flex:none;background:#092d4a;color:white;padding:12px 16px;font:900 21px Arial,sans-serif;letter-spacing:.3px}
+#hbnReplacementStudio .studioTitle small{display:block;font:700 10px Arial,sans-serif;margin-top:5px;letter-spacing:.5px;color:#d9e8f5}
+#hbnReplacementStudio iframe{display:block;flex:1;min-height:0;width:100%;border:0;background:#082c54}
+</style>
+<link rel="canonical" href="https://horseshoebaynow.com/horseshoe-bay-live-radar.html"/><meta name="description" content="Explore the Horseshoe Bay live weather radar and regional storm monitoring tools for Lake LBJ and the Highland Lakes."/></head><body><style id="hsb-network-links-style">.hsb-network-links{background:#080b10;color:#fff;display:flex;align-items:center;justify-content:center;gap:0;min-height:34px;padding:0 12px;font:700 11px/1.3 Arial,Helvetica,sans-serif;letter-spacing:.55px}.hsb-network-links a{display:inline-flex;align-items:center;color:#f4f6fa;text-decoration:none;padding:9px 18px;white-space:nowrap}.hsb-network-links a+a{border-left:1px solid #4b515b}.hsb-network-links a:hover,.hsb-network-links a:focus-visible{color:#8fd3ff;text-decoration:underline}@media(max-width:430px){.hsb-network-links{font-size:10px}.hsb-network-links a{padding:9px 10px}}</style><div class="hsb-network-links" aria-label="Our news network"><a href="https://texasnewsstudio.com/" target="_blank" rel="noopener noreferrer">TEXAS NEWS STUDIO ↗</a><a href="https://highlandlakeslive.com/" target="_blank" rel="noopener noreferrer">HIGHLAND LAKES LIVE ↗</a></div>
+<div id="mapWrap"><div id="hbnReplacementStudio" aria-label="Interactive Weather Studio map">
+<div class="studioTitle">INTERACTIVE WEATHER STUDIO<small>RADAR · TEMPERATURES · SATELLITE · WEATHER ALERTS</small></div>
+<iframe title="Interactive Weather Studio map and controls" src="tns-weather-studio.html" loading="eager"></iframe>
+</div><div id="map"></div><div id="localAlert" role="status" aria-live="polite"><div id="localAlertTop"><div id="localAlertTitle"></div><div id="localAlertControls"><span id="localAlertCount"></span><button id="localPrev" aria-label="Previous area alert">◀</button><button id="localNext" aria-label="Next area alert">▶</button><button id="localMore" aria-label="Show alert details" aria-expanded="false">DETAILS</button></div></div><div id="localAlertInfo"></div><div id="localAlertDetails"></div></div><div id="localAlertStatus" hidden>LIVE NWS ALERTS TEMPORARILY UNAVAILABLE</div><div id="hud"><div class="topbar"><div id="spcStatus">DAY 1 OUTLOOK • LOADING TEXAS RISK</div><div id="conditionsStrip"><div class="stripTag">CURRENT<br>CONDITIONS</div><div id="obsA" class="obsCard">CONNECTING NWS OBSERVATIONS…</div><div id="obsB" class="obsCard"></div></div><div id="nwsStrip"><div id="nwsTag" class="stripTag">NWS TEXAS</div><div id="nwsWindow"><div id="nwsText">Loading official NWS weather updates…</div></div></div><div id="sub"><span id="scanDot"></span><span id="radarTime">LIVE RADAR • CONNECTING</span> &nbsp;•&nbsp; <span id="clock"></span></div></div><div id="mode">HILL COUNTRY • 30-MINUTE ANIMATED RADAR</div><div id="regionBug">TEXAS HILL COUNTRY</div><div id="legend"><div class="lr"><i class="sw p"></i>PDS</div><div class="lr"><i class="sw r"></i>TORNADO WARNING</div><div class="lr"><i class="sw b"></i>TORNADO WATCH</div><div class="lr"><i class="sw o"></i>SEVERE T-STORM WARNING</div><div class="lr"><i class="sw y"></i>SEVERE T-STORM WATCH</div><div class="lr"><i class="sw g"></i>FLOOD / FLASH FLOOD</div><div id="spcKey">SPC DAY 1 RISK<br><i class="spcSw" style="background:#c1e9c1"></i>TSTM <i class="spcSw" style="background:#66a366"></i>MRGL <i class="spcSw" style="background:#ffe066"></i>SLGT<br><i class="spcSw" style="background:#ffa366"></i>ENH <i class="spcSw" style="background:#e06666"></i>MDT <i class="spcSw" style="background:#ee99ee"></i>HIGH</div></div><div id="load">CONNECTING LIVE WEATHER DATA…</div></div></div>
+<aside id="side"><div id="sideHead"><div class="small">TEXAS NEWS STUDIO</div><div class="big">ALERT SYSTEM</div><div class="tiny">TOP 3 ACTIVE NWS ALERTS</div></div><div id="cards"></div><div id="foot">LIVE NWS ALERTS • NOAA MRMS RADAR • COUNTIES • ROADS • TEMPERATURES</div></aside>
+<script>
+(()=>{'use strict';const $=id=>document.getElementById(id);
+const TX=L.latLngBounds([25.75,-106.55],[36.50,-93.52]);
+const HILL=L.latLngBounds([29.65,-99.65],[31.12,-97.40]);
+const map=L.map('map',{zoomControl:true,attributionControl:true,dragging:true,scrollWheelZoom:true,doubleClickZoom:true,boxZoom:true,keyboard:true,tap:true,zoomAnimation:true,fadeAnimation:true,markerZoomAnimation:true,preferCanvas:true,minZoom:3,maxZoom:11});
+map.fitBounds(HILL,{padding:[12,12],animate:false});
+const panes={spc:300,radar:320,bounds:390,stateBorders:405,alerts:420,roads:445,labels:470,temps:480};Object.entries(panes).forEach(([n,z])=>{map.createPane(n);map.getPane(n).style.zIndex=z;map.getPane(n).style.pointerEvents='none'});
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,maxNativeZoom:18,opacity:1,keepBuffer:3,attribution:'Map &copy; Esri, HERE, Garmin, OpenStreetMap contributors'}).addTo(map);
+const county=L.tileLayer.wms('https://tigerweb.geo.census.gov/arcgis/services/TIGERweb/tigerWMS_Current/MapServer/WMSServer',{layers:'82,80',format:'image/png',transparent:true,version:'1.3.0',opacity:1,pane:'bounds',uppercase:true}).addTo(map);
+// High-contrast Census state boundaries, drawn above radar and below warnings.
+const stateHalo=L.geoJSON([],{pane:'stateBorders',interactive:false,style:{color:'#152536',weight:4.5,opacity:.95,fill:false}}).addTo(map);
+const stateOutline=L.geoJSON([],{pane:'stateBorders',interactive:false,style:{color:'#dce9f2',weight:2,opacity:1,fill:false}}).addTo(map);
+const texasHalo=L.geoJSON([],{pane:'stateBorders',interactive:false,style:{color:'#102030',weight:8,opacity:1,fill:false}}).addTo(map);
+const texasOutline=L.geoJSON([],{pane:'stateBorders',interactive:false,style:{color:'#fff3b0',weight:4.5,opacity:1,fill:false}}).addTo(map);
+let borderAttempts=0;
+async function loadStateBorders(){try{borderAttempts++;const q=new URLSearchParams({where:'1=1',outFields:'NAME,STATE',outSR:'4326',returnGeometry:'true',maxAllowableOffset:'0.003',geometryPrecision:'5',f:'geojson'});const j=await weatherJSON('https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/0/query?'+q);if(j.type!=='FeatureCollection'||!j.features?.length)throw Error('No boundaries');const tx=j.features.filter(f=>String(f.properties?.STATE)==='48'||f.properties?.NAME==='Texas');if(!tx.length)throw Error('Texas boundary missing');const other=j.features.filter(f=>!tx.includes(f));stateHalo.clearLayers();stateOutline.clearLayers();texasHalo.clearLayers();texasOutline.clearLayers();stateHalo.addData(other);stateOutline.addData(other);texasHalo.addData(tx);texasOutline.addData(tx)}catch(e){if(borderAttempts<4)setTimeout(loadStateBorders,60000)}}
+setTimeout(loadStateBorders,250);
+
+// Census TIGERweb county boundary outlines, drawn over radar for readability.
+const countyOutlines=L.geoJSON([],{pane:'bounds',interactive:false,style:{color:'#34495b',weight:1.4,opacity:.88,fill:false}}).addTo(map);
+async function loadCountyOutlines(){
+ try{
+  const q=new URLSearchParams({where:"STATE='48'",outFields:'NAME,STATE',outSR:'4326',returnGeometry:'true',maxAllowableOffset:'0.004',geometryPrecision:'4',f:'geojson'});
+  const r=await fetch('https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query?'+q,{signal:AbortSignal.timeout(20000)});
+  if(!r.ok)throw Error('county service');const j=await r.json();
+  if(j.type==='FeatureCollection'&&j.features?.length){countyOutlines.clearLayers();countyOutlines.addData(j.features)}
+ }catch(e){/* County WMS remains visible as a fallback. */}
+}
+setTimeout(loadCountyOutlines,1000);
+let countyLabels=null,secondaryRoads=null;
+// Broadcast road stack. Esri transportation tiles guarantee a visible highway network; TIGER adds authoritative scale-specific roads above it.
+const roadReference=L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}',{pane:'roads',opacity:.9,maxZoom:19,attribution:'Roads: Esri, HERE, Garmin'}).addTo(map);
+const tigerRoadURL='https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Transportation/MapServer';
+let tigerRoads=null;
+function roadExportLayer(layerIds){return L.tileLayer(tigerRoadURL+'/tile/{z}/{y}/{x}',{pane:'roads',opacity:1,maxZoom:18,errorTileUrl:''});}
+// TIGER cached service automatically switches its cartographic road detail by map scale.
+const primaryRoads=null;
+function detailLayers(){const regional=map.getZoom()>=5;if(regional&&!countyLabels)countyLabels=L.tileLayer.wms('https://tigerweb.geo.census.gov/arcgis/services/TIGERweb/tigerWMS_Current/MapServer/WMSServer',{layers:'83',format:'image/png',transparent:true,version:'1.3.0',opacity:.95,pane:'labels',uppercase:true}).addTo(map);if(!regional&&countyLabels){map.removeLayer(countyLabels);countyLabels=null}}
+const cities=[['Horseshoe Bay',30.545,-98.373],['Marble Falls',30.578,-98.273],['Llano',30.759,-98.675],['Burnet',30.759,-98.228],['Fredericksburg',30.275,-98.872],['Kingsland',30.659,-98.441],['Johnson City',30.276,-98.411],['Blanco',30.098,-98.421],['Kerrville',30.047,-99.140],['Mason',30.749,-99.230],['Lampasas',31.064,-98.181],['San Saba',31.196,-98.718],['Amarillo',35.222,-101.831],['Lubbock',33.578,-101.855],['Midland',31.997,-102.078],['El Paso',31.762,-106.486],['San Angelo',31.464,-100.437],['Abilene',32.449,-99.733],['Wichita Falls',33.914,-98.493],['DFW',32.90,-97.04],['Waco',31.549,-97.147],['Austin',30.267,-97.743],['San Antonio',29.424,-98.494],['Houston',29.760,-95.370],['Corpus Christi',27.801,-97.396],['Laredo',27.506,-99.508],['Brownsville',25.902,-97.497],['Beaumont',30.080,-94.127]];
+const cityLayer=L.layerGroup([], {pane:'labels'}).addTo(map);function renderCityLabels(){cityLayer.clearLayers();cities.filter(c=>['Horseshoe Bay','Marble Falls','Burnet','Llano','Kingsland','Fredericksburg','Johnson City','Kerrville','Austin'].includes(c[0])).forEach(c=>L.marker([c[1],c[2]],{interactive:false,pane:'labels',icon:L.divIcon({className:'cityLabel',html:c[0],iconSize:[180,20],iconAnchor:[90,10]})}).addTo(cityLayer))}renderCityLabels();
+const hillStations=[['KDZB','Horseshoe Bay',30.527,-98.359],['KBMQ','Burnet',30.739,-98.238],['KAQO','Llano',30.784,-98.662],['KT82','Fredericksburg',30.244,-98.910],['KERV','Kerrville',29.977,-99.085],['KJCT','Junction',30.511,-99.764],['KRYW','Lago Vista',30.499,-97.970],['KGTU','Georgetown',30.679,-97.679],['KGRK','Killeen',31.068,-97.829],['KTPL','Temple',31.152,-97.408],['KHYI','San Marcos',29.892,-97.863],['KBAZ','New Braunfels',29.704,-98.042]];
+const hillIds=new Set(hillStations.map(s=>s[0]));
+const tempStations=[...hillStations,['KAMA','Amarillo',35.22,-101.71],['KLBB','Lubbock',33.66,-101.82],['KMAF','Midland',31.94,-102.19],['KELP','El Paso',31.81,-106.38],['KSJT','San Angelo',31.36,-100.50],['KABI','Abilene',32.41,-99.68],['KSPS','Wichita Falls',33.98,-98.49],['KDFW','DFW',32.90,-97.04],['KACT','Waco',31.61,-97.23],['KAUS','Austin',30.20,-97.67],['KSAT','San Antonio',29.53,-98.47],['KIAH','Houston',29.98,-95.34],['KCRP','Corpus Christi',27.77,-97.51],['KLRD','Laredo',27.54,-99.46],['KBRO','Brownsville',25.91,-97.43],['KBPT','Beaumont',29.95,-94.02]];
+const regionalStations=[["KDHT", "Dalhart", 36.02, -102.55], ["KDUX", "Dumas", 35.86, -102.01], ["KBGD", "Borger", 35.7, -101.39], ["KPPA", "Pampa", 35.61, -100.99], ["KCDS", "Childress", 34.43, -100.28], ["KPVW", "Plainview", 34.17, -101.72], ["KSNK", "Snyder", 32.69, -100.95], ["KBPG", "Big Spring", 32.21, -101.52], ["KODO", "Odessa", 31.92, -102.39], ["KINK", "Wink", 31.78, -103.2], ["KPEQ", "Pecos", 31.38, -103.51], ["KFST", "Fort Stockton", 30.92, -102.92], ["KMRF", "Marfa", 30.37, -104.02], ["KDRT", "Del Rio", 29.37, -100.92], ["KUVA", "Uvalde", 29.21, -99.74], ["KCOT", "Cotulla", 28.46, -99.22], ["KALI", "Alice", 27.74, -98.03], ["KVCT", "Victoria", 28.85, -96.92], ["KMFE", "McAllen", 26.18, -98.24], ["KHRL", "Harlingen", 26.23, -97.65], ["KEBG", "Edinburg", 26.44, -98.12], ["KGLS", "Galveston", 29.27, -94.86], ["KCLL", "College Station", 30.59, -96.36], ["KUTS", "Huntsville", 30.75, -95.59], ["KCXO", "Conroe", 30.35, -95.41], ["KLBX", "Angleton", 29.11, -95.46], ["KLFK", "Lufkin", 31.23, -94.75], ["KOCH", "Nacogdoches", 31.58, -94.71], ["KTYR", "Tyler", 32.35, -95.4], ["KGGG", "Longview", 32.38, -94.71], ["KTXK", "Texarkana", 33.45, -93.99], ["KPRX", "Paris", 33.64, -95.45], ["KDAL", "Dallas", 32.85, -96.85], ["KAFW", "Fort Worth", 32.99, -97.32], ["KDTO", "Denton", 33.2, -97.2], ["KTKI", "McKinney", 33.18, -96.59], ["KTRL", "Terrell", 32.71, -96.27], ["KMWL", "Mineral Wells", 32.78, -98.06], ["KGVT", "Greenville", 33.07, -96.06], ["KSEP", "Stephenville", 32.22, -98.18], ["KBWD", "Brownwood", 31.79, -98.96], ["KBBD", "Brady", 31.18, -99.32], ["KCOM", "Coleman", 31.84, -99.4], ["KSOA", "Sonora", 30.59, -100.65]];regionalStations.forEach(st=>{if(!tempStations.some(s=>s[0]===st[0]))tempStations.push(st)});
+tempStations.forEach(st=>{if(!cities.some(c=>c[0]===st[1]))cities.push([st[1],st[2],st[3]])});renderCityLabels();
+map.getPane('temps').style.zIndex='690';const temps=L.layerGroup([], {pane:'temps'}).addTo(map);let tempData={};let temperaturesEnabled=true;
+const stripStations=[...new Map([...tempStations.map(x=>[x[0],x[1]]),['KDZB','Horseshoe Bay'],['KBMQ','Burnet'],['KAQO','Llano'],['KGRK','Killeen'],['KTPL','Temple'],['KTYR','Tyler'],['KGGG','Longview'],['KCLL','College Station'],['KGLS','Galveston'],['KDHT','Dalhart'],['KINK','Wink'],['KDRT','Del Rio'],['KJCT','Junction'],['KERV','Kerrville'],['KUVA','Uvalde'],['KMFE','McAllen'],['KVCT','Victoria']].map(st=>[st[0],st])).values()];
+const observations=new Map();let obsIndex=0,obsBusy=false,tempPaintTimer=null;
+async function weatherJSON(url){const r=await fetch(url,{headers:{Accept:'application/geo+json, application/json'},cache:'no-store',signal:AbortSignal.timeout(18000)});if(!r.ok)throw Error('Weather data unavailable');return r.json()}
+async function pooled(items,fn,limit=3){let i=0;await Promise.all(Array.from({length:Math.min(limit,items.length)},async()=>{while(i<items.length){const x=items[i++];try{await fn(x)}catch(e){}}}))}
+let tempRefreshCursor=0;
+async function updateTemps(){
+  if(obsBusy)return;
+  obsBusy=true;
+  try{
+    // Prioritize nearby visible stations, then progressively populate Texas.
+    const bounds=map.getBounds().pad(.3);
+    const visible=tempStations.filter(st=>bounds.contains([st[2],st[3]]));
+    const local=[...visible.filter(st=>hillIds.has(st[0])),...visible.filter(st=>!hillIds.has(st[0]))];
+    const rest=tempStations.filter(st=>!visible.includes(st));
+    const ordered=[...local,...rest];
+    const pending=ordered.filter(st=>!observations.has(st[0])||Date.now()-observations.get(st[0]).time>45*60000);
+    const batch=pending.slice(0,24);
+    await pooled(batch,async st=>{
+      const j=await weatherJSON(`https://api.weather.gov/stations/${st[0]}/observations/latest`);
+      const p=j.properties||{},time=Date.parse(p.timestamp);
+      if(!Number.isFinite(time))return;
+      observations.set(st[0],{...p,name:st[1],time});
+      const xy=j.geometry?.coordinates;
+      if(Array.isArray(xy)&&Number.isFinite(xy[0])&&Number.isFinite(xy[1])){st[2]=xy[1];st[3]=xy[0]}
+      const c=p.temperature?.value;
+      if(Number.isFinite(c)&&Date.now()-time<7200000)tempData[st[0]]=Math.round(c*9/5+32);
+      if(!tempPaintTimer)tempPaintTimer=setTimeout(()=>{tempPaintTimer=null;renderTemps()},250);
+    },3);
+    renderTemps();renderConditions();
+    // Subsequent existing periodic refreshes continue filling remaining stations.
+  }finally{obsBusy=false}
+}
+setInterval(()=>{if(temperaturesEnabled)updateTemps()},45000);
+let lastTempBoundsRefresh=0;map.on('moveend',()=>{if(Date.now()-lastTempBoundsRefresh>60000){lastTempBoundsRefresh=Date.now();updateTemps()}});
+function mph(q){if(!Number.isFinite(q?.value))return null;const u=q.unitCode||'';return Math.round(q.value*(u.includes('km_h')?.621371:u.includes('m_s')?2.23694:u.includes('kt')?1.15078:1))}
+function obsTime(time){return new Date(time).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'})+' CT'}
+function renderConditions(){const visible=map.getBounds();const local=stripStations.filter(st=>{const station=tempStations.find(s=>s[0]===st[0]);return station&&visible.contains([station[2],station[3]])}).filter(st=>{const p=observations.get(st[0]);return p&&Date.now()-p.time<=7200000});const fresh=(local.length?local:stripStations).map(st=>observations.get(st[0])).filter(p=>p&&Date.now()-p.time<=7200000&&p.time<=Date.now()+300000);if(!fresh.length){$('obsA').textContent='CURRENT OBSERVATIONS UNAVAILABLE';$('obsB').textContent='Waiting for recent NWS station reports';return}for(const id of ['obsA','obsB']){const p=fresh[obsIndex++%fresh.length],c=p.temperature?.value,t=Number.isFinite(c)?Math.round(c*9/5+32):null,w=mph(p.windSpeed),g=mph(p.windGust),d=p.windDirection?.value,dir=Number.isFinite(d)?['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]:'VRB';const wind=w===null?'WIND N/A':w===0?'CALM':`WIND ${dir} ${w}${g!==null?' G'+g:''} MPH`;const rh=p.relativeHumidity?.value;$ (id).innerHTML=`<div class="obsMain">${esc(p.name.toUpperCase())}<span class="obsTemp" style="color:${t===null?'#fff':tempColor(t)}">${t===null?'—':t+'°F'}</span>${esc(p.textDescription||'Conditions not reported')}</div><div class="obsDetail">${esc(wind)}${Number.isFinite(rh)?' • RH '+Math.round(rh)+'%':''} • OBS ${obsTime(p.time)}</div>`}}
+
+function tempColor(t){if(t<=32)return '#8fd3ff';if(t<=44)return '#35bfff';if(t<=54)return '#38e0d0';if(t<=64)return '#55e36b';if(t<=74)return '#f3ea48';if(t<=84)return '#ffb12b';if(t<=94)return '#ff6b28';if(t<=104)return '#ff3131';return '#ff3fa4'}
+function renderTemps(){temps.clearLayers();if(!temperaturesEnabled)return;const b=map.getBounds(),regional=map.getZoom()>=7,used=[];const candidates=[...tempStations].sort((a,b)=>Number(hillIds.has(b[0]))-Number(hillIds.has(a[0])));candidates.forEach((s,i)=>{const obs=observations.get(s[0]),city=cities.find(c=>c[0]===s[1]),pos=city?[city[1],city[2]]:[s[2],s[3]];if(!b.contains(pos)||tempData[s[0]]==null||!obs||Date.now()-obs.time>7200000)return;if(!regional&&!hillIds.has(s[0])&&i%2!==0)return;const pixel=map.latLngToContainerPoint(pos),rect={x:pixel.x-50,y:pixel.y-54,w:100,h:42};if(used.some(r=>rect.x<r.x+r.w&&rect.x+rect.w>r.x&&rect.y<r.y+r.h&&rect.y+rect.h>r.y))return;used.push(rect);const t=tempData[s[0]],tc=tempColor(t);L.marker(pos,{interactive:false,pane:'temps',icon:L.divIcon({className:'tempLabel',html:`<span style="color:${tc}">${t}°</span>`,iconSize:[100,42],iconAnchor:[50,54]})}).addTo(temps)})}
+
+// Original NWS text excerpts, clearly separated from current observations.
+const nwsOffices=[['EWX','Austin / San Antonio'],['FWD','Fort Worth'],['HGX','Houston / Galveston'],['AMA','Amarillo'],['LUB','Lubbock'],['MAF','Midland / Odessa'],['SJT','San Angelo'],['CRP','Corpus Christi'],['BRO','Brownsville'],['EPZ','El Paso'],['SHV','Shreveport / East Texas']];
+const nwsProducts=new Map();let newsBusy=false,newsIndex=0,newsTimer=null,lastAlertsOK=0;
+function productExcerpt(text,kind){let body=String(text||'').replace(/\r/g,'');if(kind==='AFD'){const m=body.match(/\.(?:KEY MESSAGES|SYNOPSIS|SHORT TERM|DISCUSSION|UPDATE)\b[^\n]*\n([\s\S]*?)(?=\n&&|\n\.[A-Z]|$)/i);if(!m)return '';body=m[1]}else{body=body.split(/\n\n/).slice(1).join(' ')}body=body.replace(/Issued at[^\n]*\n/gi,'').replace(/\$\$[\s\S]*/,'').replace(/\n/g,' ').replace(/\s+/g,' ').trim();if(body.length>550){const cut=body.slice(0,550);const end=Math.max(cut.lastIndexOf('. '),cut.lastIndexOf('; '));body=(end>180?cut.slice(0,end+1):cut.slice(0,cut.lastIndexOf(' '))+'…')}return body}
+async function refreshNews(){if(newsBusy)return;newsBusy=true;try{await pooled(nwsOffices,async([office,name])=>{for(const kind of ['SPS','AFD']){try{const list=await weatherJSON(`https://api.weather.gov/products/types/${kind}/locations/${office}`);const recent=(list['@graph']||[]).filter(p=>Number.isFinite(Date.parse(p.issuanceTime))).sort((a,b)=>Date.parse(b.issuanceTime)-Date.parse(a.issuanceTime))[0];if(!recent)continue;const issued=Date.parse(recent.issuanceTime),maxAge=kind==='SPS'?10800000:86400000,key=office+kind;if(Date.now()-issued>maxAge){nwsProducts.delete(key);continue}if(nwsProducts.get(key)?.id===recent.id)continue;const detail=await weatherJSON('https://api.weather.gov/products/'+encodeURIComponent(recent.id));const excerpt=productExcerpt(detail.productText,kind);if(excerpt)nwsProducts.set(key,{id:recent.id,office,name,kind,issued,text:excerpt,maxAge})}catch(e){}}},3)}finally{newsBusy=false}}
+function currentNews(){const now=Date.now();const urgent=now-lastAlertsOK<300000?alerts.filter(f=>{const p=f.properties||{},end=Date.parse(p.ends||p.expires);return (!Number.isFinite(end)||end>now)&&['Extreme','Severe','Moderate'].includes(p.severity)}).slice(0,8).map(f=>{const p=f.properties||{};return{tag:'NWS ALERT',source:p.senderName||'NWS',text:p.headline||p.event+' • '+p.areaDesc}}):[];const products=[...nwsProducts.values()].filter(p=>now-p.issued<=p.maxAge).sort((a,b)=>(a.kind==='SPS'?0:1)-(b.kind==='SPS'?0:1)||b.issued-a.issued).map(p=>({tag:p.kind==='SPS'?'NWS STATEMENT':'NWS DISCUSSION',source:'NWS '+p.name.toUpperCase()+' • ISSUED '+new Date(p.issued).toLocaleString('en-US',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'})+' CT',text:p.text}));const mixed=[];for(let i=0;i<Math.max(urgent.length,products.length);i++){if(urgent[i])mixed.push(urgent[i]);if(products[i])mixed.push(products[i])}return mixed}
+// Stationary sentence cards: no scrolling, transforms, or animation.
+function sentencePages(text,maxWidth,font){const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');ctx.font=font;const sentences=typeof Intl.Segmenter==='function'?[...new Intl.Segmenter('en',{granularity:'sentence'}).segment(text)].map(x=>x.segment.trim()):String(text).match(/[^.!?]+[.!?]*(?:\s|$)/g)||[text];const pages=[];for(const sentence of sentences){let line='';for(const word of sentence.trim().split(/\s+/)){const next=line?line+' '+word:word;if(line&&ctx.measureText(next).width>maxWidth){pages.push(line);line=word}else line=next}if(line)pages.push(line)}return pages}
+function rotateNews(){clearTimeout(newsTimer);const node=$('nwsText');node.innerHTML='<div id="nwsSource"></div><div id="nwsSentence"></div>';const line=$('nwsSentence'),width=Math.max(100,$('nwsWindow').clientWidth-26),font=getComputedStyle(line).font;const slides=currentNews().flatMap(item=>sentencePages(item.text,width,font).map(text=>({...item,text})));const item=slides.length?slides[newsIndex++%slides.length]:{tag:'NWS TEXAS',source:'OFFICIAL NWS WEATHER UPDATES',text:'Updates temporarily unavailable • Monitoring Texas weather offices'};$('nwsTag').textContent=item.tag;$('nwsSource').textContent=item.source||'NWS TEXAS';line.textContent=item.text;newsTimer=setTimeout(rotateNews,12000)}
+
+
+// Official NOAA SPC categorical outlooks, selectable without replacing the radar.
+const spcColors={2:'#c1e9c1',3:'#66a366',4:'#ffe066',5:'#ffa366',6:'#e06666',8:'#ee99ee'};
+const spcService='https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer';
+const spcLayer=L.geoJSON([],{pane:'spc',interactive:false,style:f=>{const c=spcColors[Number(f.properties?.dn)]||'#c1e9c1';return{color:c,weight:2,opacity:.95,fillColor:c,fillOpacity:.34}}});
+let spcSelected=0,spcRequest=0,spcLayerIds=null;
+const spcUI=document.createElement('div');spcUI.id='spcHover';
+spcUI.innerHTML='<button id="spcHandle" type="button" aria-label="SPC outlook overlays" aria-expanded="false">SPC OUTLOOKS</button><div id="spcOptions" role="group" aria-label="SPC weather outlook layers"><button data-day="1" aria-pressed="false">Day 1 Outlook</button><button data-day="2" aria-pressed="false">Day 2 Outlook</button><button data-day="3" aria-pressed="false">Day 3 Outlook</button><button data-day="0" aria-pressed="true">Hide Outlook</button><div class="layerSeparator">MAP OBSERVATIONS</div><button id="temperatureToggle" type="button" aria-pressed="true">✓ Temperatures ON</button><div class="layerSeparator">LOCAL NWS ALERTS</div><button id="localToggle" type="button" aria-pressed="true">✓ Local warning swaths ON</button><div id="spcMessage">Radar stays visible underneath.</div></div>';
+document.getElementById('mapWrap').appendChild(spcUI);
+const spcHandle=document.getElementById('spcHandle');
+const temperatureToggle=document.getElementById('temperatureToggle');
+temperatureToggle.addEventListener('click',()=>{temperaturesEnabled=!temperaturesEnabled;temperatureToggle.setAttribute('aria-pressed',String(temperaturesEnabled));temperatureToggle.textContent=temperaturesEnabled?'✓ Temperatures ON':'Temperatures OFF';renderTemps();});
+spcHandle.addEventListener('click',()=>{spcUI.classList.toggle('open');spcHandle.setAttribute('aria-expanded',spcUI.classList.contains('open'))});
+function spcMessage(message){document.getElementById('spcMessage').textContent=message}
+function spcDate(v){if(!v)return null;const t=String(v),m=t.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/);const d=m?new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5])):new Date(v);return Number.isFinite(d.getTime())?d:null}
+async function findSPCLayers(){
+ if(spcLayerIds)return spcLayerIds;
+ const r=await fetch(spcService+'?f=pjson',{cache:'no-store'});if(!r.ok)throw Error('SPC layer directory unavailable');
+ const j=await r.json(),layers=j.layers||[];
+ const result={1:1};
+ for(const day of [1,2,3]){
+  const matching=layers.filter(l=>{const name=l.name.toLowerCase();return new RegExp('day\\s*'+day+'(?![0-9])|d'+day+'(?![0-9])').test(name)&&/categorical|convective|outlook|risk/.test(name)&&!/tornado|hail|wind|probabilistic/.test(name)});
+  if(matching.length)result[day]=matching[0].id;
+ }
+ spcLayerIds=result;return result;
+}
+// ArcGIS dynamic map images avoid browser cross-origin JSON restrictions.
+const spcOfficialLayers={1:1,2:9,3:17};
+let spcImage=null;
+function refreshSPC(){
+ const day=spcSelected;if(!day)return;
+ const token=++spcRequest;
+ const bounds=map.getBounds(),size=map.getSize();
+ const bbox=[bounds.getWest(),bounds.getSouth(),bounds.getEast(),bounds.getNorth()].join(',');
+ const q=new URLSearchParams({bbox,bboxSR:'4326',imageSR:'4326',size:Math.max(1,Math.round(size.x))+','+Math.max(1,Math.round(size.y)),dpi:'96',format:'png32',transparent:'true',layers:'show:'+spcOfficialLayers[day],f:'image',_t:String(Date.now())});
+ const url=spcService+'/export?'+q;
+ spcMessage('Loading official SPC Day '+day+' outlook…');
+ const overlay=L.imageOverlay(url,bounds,{pane:'spc',opacity:.65,interactive:false});
+ overlay.once('load',()=>{
+   if(token!==spcRequest||spcSelected!==day){map.removeLayer(overlay);return}
+   if(spcImage&&spcImage!==overlay)map.removeLayer(spcImage);
+   spcImage=overlay;
+   spcMessage('Official SPC Day '+day+' • overlay active');
+   document.getElementById('spcStatus').textContent='SPC DAY '+day+' OUTLOOK • ACTIVE';
+ });
+ overlay.once('error',()=>{
+   if(map.hasLayer(overlay))map.removeLayer(overlay);
+   if(token===spcRequest)spcMessage('NOAA image service could not load. Please retry.');
+ });
+ overlay.addTo(map);
+}
+map.on('moveend resize',()=>{if(spcSelected)refreshSPC()});
+spcUI.querySelectorAll('[data-day]').forEach(btn=>btn.addEventListener('click',()=>{
+ spcSelected=Number(btn.dataset.day);++spcRequest;
+ spcUI.querySelectorAll('[data-day]').forEach(b=>b.setAttribute('aria-pressed',String(b===btn)));
+ if(!spcSelected){spcLayer.clearLayers();if(map.hasLayer(spcLayer))map.removeLayer(spcLayer);if(spcImage){map.removeLayer(spcImage);spcImage=null;}spcMessage('Outlook hidden • radar unchanged');document.getElementById('spcStatus').textContent='SPC OUTLOOK • OFF'}else refreshSPC();
+ spcUI.classList.remove('open');spcHandle.setAttribute('aria-expanded','false');
+}));
+// Preserve the previous Day 1 default, while allowing it to be switched off.
+spcUI.querySelector('[data-day="1"]').click();
+setInterval(()=>{if(spcSelected)refreshSPC()},300000);
+
+const IEM='https://mapservices.weather.noaa.gov/eventdriven/services/radar/radar_base_reflectivity/MapServer/WMSServer?';
+// IEM's NEXRAD composite exposes the current image plus fixed 5-minute-back layers.
+// This avoids the heavier NOAA exportImage request on every animation frame.
+const radarLayers=['0'];
+let radarFrames=[],frame=0,frameTimer=null,radarGeneration=0;
+function makeRadarLayer(layer){return L.tileLayer.wms(IEM,{layers:layer,styles:'',format:'image/png',transparent:true,version:'1.1.1',opacity:0,pane:'radar',uppercase:true,updateWhenIdle:true,updateWhenZooming:false,keepBuffer:2,tileSize:256,errorTileUrl:''})}
+function clearRadar(){radarFrames.forEach(x=>{try{map.removeLayer(x)}catch(e){}});radarFrames=[]}
+function radarLabel(i){const mins=[25,20,15,10,5,0][i]||0;const t=new Date(Date.now()-mins*60000);return (mins===0?'LATEST SCAN':'RADAR -'+mins+' MIN')+' • '+t.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'})+' CT'}
+function playRadar(gen){if(gen!==radarGeneration||!radarFrames.length)return;radarFrames.forEach((l,i)=>l.setOpacity(i===frame?.80:0));$('radarTime').textContent=radarLabel(frame);$('load').style.opacity='0';frame=(frame+1)%radarFrames.length;clearTimeout(frameTimer);frameTimer=null}
+function restartRadar(){clearTimeout(frameTimer);radarGeneration++;const gen=radarGeneration;clearRadar();frame=0;$('radarTime').textContent='NOAA MRMS • LOADING';radarLayers.forEach((name,i)=>{const l=makeRadarLayer(name);radarFrames.push(l);l.addTo(map)});setTimeout(()=>playRadar(gen),650)}
+function type(p){const e=(p.event||'').toLowerCase(),txt=[p.event,p.headline,p.description,p.instruction].filter(Boolean).join(' ').toUpperCase();if(txt.includes('PARTICULARLY DANGEROUS SITUATION')||/\bPDS\b/.test(txt))return'pds';if(e.includes('tornado warning'))return'tornado';if(e.includes('tornado watch'))return'torwatch';if(e.includes('severe thunderstorm warning'))return'severe';if(e.includes('severe thunderstorm watch'))return'svrwatch';if(e.includes('flash flood')||e.includes('flood'))return e.includes('watch')?'flood':'flash';if(e.includes('watch'))return'watch';return'other'}
+const alertColors={pds:'#b653ff',tornado:'#ff1820',torwatch:'#800020',severe:'#ff8a00',svrwatch:'#ffe600',flash:'#19e979',flood:'#19e979',watch:'#7c91a0',other:'#55bde8'};
+// Nationwide NWS weather.gov-style warnings, watches, advisories and statements.
+// NOAA's official operational WWA ArcGIS service supplies the actual colored geometries.
+// Kept separate from the existing Texas-only alerts, alert cards and local warning swaths.
+const NATIONAL_WWA='https://mapservices.weather.noaa.gov/eventdriven/rest/services/WWA/watch_warn_adv/MapServer';
+map.createPane('nationalWWA');map.getPane('nationalWWA').style.zIndex='415';
+map.getPane('nationalWWA').style.pointerEvents='none';
+const nationalWWA=L.esri.dynamicMapLayer({url:NATIONAL_WWA,layers:[1,0],opacity:.77,pane:'nationalWWA',format:'png32',transparent:true,attribution:'NWS Watches, Warnings & Advisories'}).addTo(map);
+const nationalInfo=document.createElement('div');nationalInfo.id='nationalWWAInfo';
+nationalInfo.style.cssText='position:absolute;left:9px;bottom:57px;z-index:1005;background:#09283eea;color:#fff;padding:7px 10px;border:1px solid #a9c7db;border-radius:4px;font:700 11px Arial;max-width:260px;pointer-events:auto';
+nationalInfo.innerHTML='<span style="color:#7cddff">●</span> NWS NATIONAL ALERTS <span id="nationalWWAStatus" style="font-weight:400">· tap colored areas for details</span>';
+document.getElementById('mapWrap').appendChild(nationalInfo);
+const nationalPopup=L.popup({maxWidth:420,minWidth:245,autoPan:true,className:'nws-national-popup'});
+const safeNational=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function nationalDetail(attrs){const a=attrs||{};const title=a.prod_type||a.event||a.event_name||a.EVENT||a.phenom||'NWS WEATHER ALERT';const area=a.areaDesc||a.area||a.AREA||a.wfo||'';const until=a.expiration||a.ends||a.expires||'';const id=a.cap_id||a.CAP_ID||'';const link=a.url||a.URL||'';
+ const safeLink=/^https:\/\//i.test(link)?'<p><a target="_blank" rel="noopener noreferrer" href="'+safeNational(link)+'">Full NWS bulletin</a></p>':'';
+ return '<div style="font:13px/1.45 Arial;color:#132b3c"><strong style="font-size:16px">'+safeNational(title)+'</strong><p>'+safeNational(area)+'</p>'+(until?'<p><b>Expires:</b> '+safeNational(until)+'</p>':'')+safeLink+(id?'<small>NWS alert identifier: '+safeNational(id)+'</small>':'')+'</div>';
+}
+let nationalClickRequest=0;
+map.on('click',async e=>{const request=++nationalClickRequest;const b=map.getBounds(),size=map.getSize();const bbox=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].join(',');const q=new URLSearchParams({f:'json',geometry:JSON.stringify({x:e.latlng.lng,y:e.latlng.lat,spatialReference:{wkid:4326}}),geometryType:'esriGeometryPoint',sr:'4326',layers:'all:0,1',tolerance:'7',mapExtent:bbox,imageDisplay:Math.round(size.x)+','+Math.round(size.y)+',96',returnGeometry:'false'});
+ try{const response=await fetch(NATIONAL_WWA+'/identify?'+q,{cache:'no-store'});if(!response.ok)throw Error('NWS identify unavailable');const data=await response.json();if(request!==nationalClickRequest)return;
+ const hits=(data.results||[]).filter(r=>r.attributes);if(!hits.length)return;
+ const html='<div style="max-height:340px;overflow:auto"><div style="font:700 11px Arial;color:#557">NATIONAL WEATHER SERVICE · '+hits.length+' ALERT'+(hits.length===1?'':'S')+'</div>'+hits.slice(0,8).map(h=>nationalDetail(h.attributes)).join('<hr style="border:0;border-top:1px solid #ccd"/>')+'</div>';
+ nationalPopup.setLatLng(e.latlng).setContent(html).openOn(map);
+ }catch(err){document.getElementById('nationalWWAStatus').textContent='· detail service temporarily unavailable';}
+});
+// Operational NOAA service refreshes roughly every five minutes; force a fresh map export.
+setInterval(()=>{try{nationalWWA.refresh()}catch(e){}},300000);
+const alertLayer=L.geoJSON([],{pane:'alerts',interactive:false,style:f=>{const k=type(f.properties||{}),c=alertColors[k];return{color:c,weight:['pds','tornado'].includes(k)?5:3,opacity:1,fillColor:c,fillOpacity:k==='other'?.06:.10}}}).addTo(map);let alerts=[];const zoneCache=new Map();
+function pri(f){return({pds:0,tornado:1,severe:2,flash:3,flood:4,torwatch:5,svrwatch:6,watch:7,other:8})[type(f.properties||{})]??8}
+function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m])}
+function exp(v){const d=new Date(v);return isNaN(d)?'UNTIL FURTHER NOTICE':'UNTIL '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/Chicago'})+' CT'}
+function cards(){const box=$('cards');box.innerHTML='';const a=alerts.slice(0,3);while(a.length<3)a.push(null);a.forEach(f=>{const d=document.createElement('div');if(!f){d.className='card other';d.innerHTML='<div class="event">NO ADDITIONAL ALERT</div><div class="area">Monitoring Texas NWS offices</div><div class="exp">LIVE MONITORING</div>'}else{const p=f.properties||{},k=type(p),title=(k==='pds'?'PDS • ':'')+(p.event||'NWS ALERT');d.className='card '+k;d.innerHTML=`<div class="event">${esc(title)}</div><div class="area">${esc(p.areaDesc||'Texas')}</div><div class="exp">${esc(exp(p.expires||p.ends))}</div>`}box.appendChild(d)})}
+async function zoneFeature(url,props){try{if(zoneCache.has(url))return{type:'Feature',properties:props,geometry:zoneCache.get(url)};const r=await fetch(url,{headers:{Accept:'application/geo+json'}});if(!r.ok)return null;const j=await r.json();if(j.geometry){zoneCache.set(url,j.geometry);return{type:'Feature',properties:props,geometry:j.geometry}}}catch(e){}return null}
+async function refreshAlerts(){try{const r=await fetch('https://api.weather.gov/alerts/active?area=TX',{headers:{Accept:'application/geo+json'},cache:'no-store'});if(!r.ok)throw 0;const j=await r.json();alerts=(j.features||[]).sort((a,b)=>pri(a)-pri(b));lastAlertsOK=Date.now();localFeedReady=true;localStatus.hidden=true;cards();buildLocalGeometry();const geo=[];for(const f of alerts.slice(0,45)){if(f.geometry){geo.push(f);continue}const zs=(f.properties?.affectedZones||[]).slice(0,12);const got=await Promise.all(zs.map(z=>zoneFeature(z,f.properties)));got.filter(Boolean).forEach(x=>geo.push(x))}alertLayer.clearLayers()}catch(e){if(!localFeedReady)localStatus.hidden=false}}
+// Broadcast-quality, map-viewport-aware alert display. Watch products excluded from local map overlays.
+const localAlertBox=$('localAlert'),localStatus=$('localAlertStatus');
+const LOCAL_ALERT_MIN_ZOOM=7;let localAlertsEnabled=true;
+const localToggle=$('localToggle');
+function syncLocalVisibility(){const show=localAlertsEnabled&&map.getZoom()>=LOCAL_ALERT_MIN_ZOOM; if(show){if(!map.hasLayer(localLayer))localLayer.addTo(map)}else{if(map.hasLayer(localLayer))map.removeLayer(localLayer);localAlertBox.classList.remove('visible','details-open')}return show}
+localToggle.addEventListener('click',()=>{localAlertsEnabled=!localAlertsEnabled;localToggle.setAttribute('aria-pressed',String(localAlertsEnabled));localToggle.textContent=localAlertsEnabled?'✓ Local warning swaths ON':'Local warning swaths OFF';syncLocalVisibility();renderLocalAlerts();spcUI.classList.remove('open');spcHandle.setAttribute('aria-expanded','false')});
+let localCandidates=[],localIndex=0,localChosenId=null,localGeometry=new Map(),localFeedReady=false;
+const localLayer=L.geoJSON([],{pane:'alerts',interactive:true,style:f=>{const c=localColor(f.properties||{});return{color:c,weight:3.5,opacity:1,fillColor:c,fillOpacity:.12}},onEachFeature:(f,l)=>l.on('click',()=>{localChosenId=f.properties?.id||f.id;localIndex=0;renderLocalAlerts(true)})}).addTo(map);
+function localIsWatch(p){return /\bwatch\b/i.test(p.event||'')}
+function localColor(p){const e=(p.event||'').toLowerCase();if(e.includes('tornado warning'))return '#e31c23';if(e.includes('severe thunderstorm warning'))return '#e98b0c';if(e.includes('flash flood warning'))return '#13a94b';if(e.includes('flood warning'))return '#20a859';if(e.includes('dense fog'))return '#657c8a';if(e.includes('winter storm'))return '#a54bd4';if(e.includes('special weather statement'))return '#1875aa';if(e.includes('advisory'))return '#a98930';return '#246ea2'}
+function localRank(f){const e=(f.properties?.event||'').toLowerCase();if(e.includes('tornado warning'))return 0;if(e.includes('flash flood warning'))return 1;if(e.includes('severe thunderstorm warning'))return 2;if(e.includes('warning'))return 3;if(e.includes('advisory'))return 4;if(e.includes('special weather statement'))return 5;return 6}
+function localBounds(f){const g=localGeometry.get(f.id||f.properties?.id)||f.geometry;if(!g)return null;try{return L.geoJSON({type:'Feature',geometry:g}).getBounds()}catch(e){return null}}
+function localKey(f){return f.id||f.properties?.id||f.properties?.event+'|'+f.properties?.areaDesc}
+function renderLocalAlerts(keepSelection=false){
+ if(!syncLocalVisibility())return;
+ const visible=map.getBounds();const old=keepSelection?localChosenId:(localCandidates[localIndex]&&localKey(localCandidates[localIndex]));
+ localCandidates=alerts.filter(f=>{const p=f.properties||{},end=Date.parse(p.ends||p.expires||'');if(localIsWatch(p)||(Number.isFinite(end)&&end<Date.now()))return false;const b=localBounds(f);return b&&b.isValid()&&b.intersects(visible)}).sort((a,b)=>localRank(a)-localRank(b)||String(a.properties?.event).localeCompare(String(b.properties?.event)));
+ if(!localCandidates.length){localAlertBox.classList.remove('visible','details-open');localChosenId=null;return}
+ localIndex=Math.max(0,localCandidates.findIndex(f=>localKey(f)===old));const f=localCandidates[localIndex],p=f.properties||{};localChosenId=localKey(f);
+ localAlertBox.style.setProperty('--alert-color',localColor(p));$('localAlertTitle').textContent=(p.event||'NWS WEATHER ALERT').toUpperCase()+' | '+(p.areaDesc?.includes('TX')?'TX':'NWS');$('localAlertCount').textContent=(localIndex+1)+' / '+localCandidates.length;
+ $('localPrev').disabled=$('localNext').disabled=localCandidates.length<2;
+ const bits=[exp(p.ends||p.expires),p.areaDesc?'AREAS: '+p.areaDesc:''];const params=p.parameters||{};const hail=params.maxHailSize?.[0],wind=params.maxWindGust?.[0];if(hail)bits.push('HAIL: '+hail+' IN');if(wind)bits.push('WIND: '+wind+' MPH');if(params.tornadoDetection?.[0])bits.push('TORNADO: '+params.tornadoDetection[0]);
+ $('localAlertInfo').replaceChildren(...bits.filter(Boolean).map(t=>{const span=document.createElement('span');span.textContent=t;return span}));$('localAlertDetails').textContent=[p.headline,p.description,p.instruction].filter(Boolean).join('\n\n');$('localAlertDetails').style.whiteSpace='pre-wrap';localAlertBox.classList.add('visible');
+}
+$('localPrev').addEventListener('click',()=>{if(!localCandidates.length)return;localIndex=(localIndex+localCandidates.length-1)%localCandidates.length;localChosenId=localKey(localCandidates[localIndex]);renderLocalAlerts(true)});
+$('localNext').addEventListener('click',()=>{if(!localCandidates.length)return;localIndex=(localIndex+1)%localCandidates.length;localChosenId=localKey(localCandidates[localIndex]);renderLocalAlerts(true)});
+$('localMore').addEventListener('click',()=>{const open=localAlertBox.classList.toggle('details-open');$('localMore').setAttribute('aria-expanded',String(open));$('localMore').textContent=open?'CLOSE':'DETAILS'});
+map.on('moveend zoomend',()=>renderLocalAlerts());
+async function buildLocalGeometry(){const candidates=alerts.filter(f=>!localIsWatch(f.properties||{}));const geo=[];localGeometry.clear();
+ // Prefer official alert geometry; for county/zone advisories use official NWS zone shapes.
+ await Promise.all(candidates.map(async f=>{const id=localKey(f);if(f.geometry){localGeometry.set(id,f.geometry);geo.push({...f,properties:{...f.properties,id}});return}const zones=(f.properties?.affectedZones||[]).slice(0,40);const shapes=(await Promise.all(zones.map(z=>zoneFeature(z,f.properties)))).filter(Boolean);if(shapes.length){localGeometry.set(id,{type:'GeometryCollection',geometries:shapes.map(x=>x.geometry)});shapes.forEach(x=>geo.push({...x,properties:{...x.properties,id}}))}}));
+ localLayer.clearLayers();localLayer.addData(geo);renderLocalAlerts();
+}
+const tour=[
+{name:'TEXAS STATEWIDE',bounds:TX},
+{name:'PANHANDLE / AMARILLO • KAMA',c:[35.25, -101.8],z:8},
+{name:'SOUTH PLAINS / LUBBOCK • KLBB',c:[33.65, -101.85],z:8},
+{name:'PERMIAN BASIN / MIDLAND • KMAF',c:[31.97, -102.25],z:8},
+{name:'BIG BEND / TRANS-PECOS',c:[30.75, -103.6],z:7},
+{name:'EL PASO / FAR WEST TEXAS • KEPZ',c:[31.8, -106.2],z:8},
+{name:'CONCHO VALLEY / SAN ANGELO • KSJT',c:[31.42, -100.4],z:8},
+{name:'BIG COUNTRY / ABILENE • KDYX',c:[32.45, -99.7],z:8},
+{name:'WICHITA FALLS / RED RIVER • KFDR',c:[33.92, -98.5],z:8},
+{name:'DALLAS / FORT WORTH • KFWS',c:[32.85, -97.0],z:8},
+{name:'WACO / TEMPLE / KILLEEN • KGRK',c:[31.2, -97.35],z:8},
+{name:'EAST TEXAS / TYLER / LONGVIEW • KSHV',c:[32.35, -94.85],z:8},
+{name:'SOUTHEAST TEXAS / BEAUMONT • KLCH',c:[30.1, -94.15],z:8},
+{name:'HOUSTON / GALVESTON • KHGX',c:[29.65, -95.15],z:8},
+{name:'AUSTIN / SAN ANTONIO • KEWX',c:[30.05, -98.05],z:8},
+{name:'DEL RIO / UVALDE • KDFX',c:[29.4, -100.2],z:8},
+{name:'CORPUS CHRISTI / COASTAL BEND • KCRP',c:[27.85, -97.5],z:8},
+{name:'LAREDO / SOUTH TEXAS',c:[27.55, -99.3],z:8},
+{name:'RIO GRANDE VALLEY / BROWNSVILLE • KBRO',c:[26.15, -97.8],z:8},
+{name:'TEXAS HILL COUNTRY',bounds:HILL},
+{name:'HORSESHOE BAY / MARBLE FALLS',c:[30.554, -98.32],z:10},
+{name:'LLANO / KINGSLAND',c:[30.727, -98.565],z:10},
+{name:'BURNET / HIGHLAND LAKES',c:[30.74, -98.235],z:10},
+{name:'FREDERICKSBURG / GILLESPIE COUNTY',c:[30.265, -98.885],z:10},
+{name:'HORSESHOE BAY / LAKE LBJ',c:[30.57, -98.38],z:11},
+{name:'JOHNSON CITY / BLANCO',c:[30.187, -98.417],z:10},
+{name:'KERRVILLE / COMFORT',c:[29.985, -99.04],z:10},
+{name:'MASON / WESTERN HILL COUNTRY',c:[30.65, -99.13],z:9},
+{name:'BURNET / LAMPASAS',c:[30.905, -98.22],z:9}
+];let ti=0,tourTimer=null;
+function showRegion(name){const b=$('regionBug');b.textContent=name;b.classList.add('show');setTimeout(()=>b.classList.remove('show'),3200)}
+// Brief priority-warning interruptions; the next regular region remains queued.
+const warningLastShown=new Map();let warningFocusId=null,warningFocusTimer=null;
+const WARNING_HOLD=18000,WARNING_REPEAT=180000;
+function warningId(f){const p=f.properties||{};return f.id||p.id||[p.event,p.sent,JSON.stringify(f.geometry)].join('|')}
+function specialWarnings(){return alerts.filter(f=>{const p=f.properties||{},e=(p.event||'').toLowerCase(),k=type(p),end=Date.parse(p.ends||p.expires||'');return e.includes('warning')&&(['tornado','severe','pds'].includes(k)||e.includes('flash flood warning'))&&['Polygon','MultiPolygon'].includes(f.geometry?.type)&&(!Number.isFinite(end)||end>Date.now())})}
+function focusWarning(f){
+let bounds;try{bounds=L.geoJSON(f).getBounds()}catch(e){return false}if(!bounds?.isValid())return false;
+const id=warningId(f),p=f.properties||{};clearTimeout(tourTimer);clearTimeout(warningFocusTimer);map.stop();warningFocusId=id;warningLastShown.set(id,Date.now());
+$('mode').textContent=(type(p)==='pds'?'PDS • ':'')+(p.event||'WARNING').toUpperCase()+' • POLYGON CLOSE-UP';showRegion((p.event||'WARNING').toUpperCase());
+map.fitBounds(bounds,{paddingTopLeft:[55,75],paddingBottomRight:[70,110],maxZoom:9,animate:true,duration:1.5});
+warningFocusTimer=setTimeout(()=>{warningFocusId=null;nextTour(false)},WARNING_HOLD);return true;
+}
+function considerWarningFocus(){
+const list=specialWarnings(),ids=new Set(list.map(warningId));for(const id of warningLastShown.keys())if(!ids.has(id))warningLastShown.delete(id);
+if(warningFocusId){if(!ids.has(warningFocusId)){clearTimeout(warningFocusTimer);warningFocusId=null;nextTour(false)}return}
+const fresh=list.find(f=>!warningLastShown.has(warningId(f)));if(fresh)focusWarning(fresh);
+}
+function nextTour(allowWarning=true){
+if(warningFocusId)return;
+if(allowWarning){const f=specialWarnings().find(f=>Date.now()-(warningLastShown.get(warningId(f))||0)>=WARNING_REPEAT);if(f&&focusWarning(f))return}
+const v=tour[ti];$('mode').textContent=v.name+' • VIEW '+(ti+1)+'/'+tour.length;showRegion(v.name);if(v.bounds)map.fitBounds(v.bounds,{padding:[15,15],animate:true,duration:1.4});else map.flyTo(v.c,v.z,{animate:true,duration:1.5});ti=(ti+1)%tour.length;clearTimeout(tourTimer);tourTimer=setTimeout(nextTour,11500);
+}
+
+// Clickable Texas NEXRAD site markers: selection changes map view, never navigates away.
+const radarSites=[
+['KEWX','Austin / San Antonio',29.704,-98.029],['KFWS','Dallas / Fort Worth',32.573,-97.303],
+['KGRK','Fort Cavazos / Killeen',30.722,-97.383],['KDYX','Abilene',32.538,-99.254],
+['KSJT','San Angelo',31.371,-100.493],['KAMA','Amarillo',35.233,-101.709],
+['KLBB','Lubbock',33.654,-101.814],['KMAF','Midland / Odessa',31.943,-102.189],
+['KEPZ','El Paso',31.873,-106.698],['KHGX','Houston / Galveston',29.472,-95.079],
+['KCRP','Corpus Christi',27.784,-97.511],['KBRO','Brownsville',25.916,-97.419],
+['KLCH','Lake Charles / SE Texas',30.125,-93.216],['KSHV','Shreveport / East Texas',32.451,-93.841]
+];
+const radarDots=L.layerGroup().addTo(map);
+let activeRadar='MRMS';
+const radarBadge=document.createElement('div');radarBadge.id='radarBadge';radarBadge.innerHTML='<button type="button" id="mrmsReset" title="Return to Highland Lakes MRMS view" aria-label="Return to Highland Lakes MRMS radar view">↩</button><span id="radarSelection">Select a radar dot to explore its area</span>';
+document.getElementById('mapWrap').appendChild(radarBadge);
+const resetMRMS=()=>{activeRadar='MRMS';map.fitBounds(HILL,{padding:[12,12],animate:false});document.getElementById('radarSelection').textContent='Texas composite · select a radar dot';document.getElementById('mrmsReset').textContent='↩';};
+document.getElementById('mrmsReset').addEventListener('click',resetMRMS);
+radarSites.forEach(([id,name,lat,lon])=>{
+ const marker=L.circleMarker([lat,lon],{radius:6,color:'#ffffff',weight:2,fillColor:'#006ac2',fillOpacity:.98,pane:'markerPane'}).addTo(radarDots);
+ marker.bindTooltip(name+' ('+id+')',{direction:'top'});
+ marker.on('click',()=>{activeRadar=id;map.setView([lat,lon],8,{animate:false});document.getElementById('radarSelection').textContent=name+' · '+id+' area';document.getElementById('mrmsReset').textContent='↩';});
+});
+map.on('moveend',()=>{detailLayers();renderTemps();renderConditions();restartRadar()});
+function clock(){$('clock').textContent=new Date().toLocaleString('en-US',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'America/Chicago',timeZoneName:'short'})}
+clock();setInterval(clock,1000);refreshAlerts();setInterval(refreshAlerts,90000);detailLayers();setTimeout(restartRadar,500);setInterval(restartRadar,300000);setTimeout(()=>map.invalidateSize(),500);
+})();
+</script>
+<div class="hsb-live-visitors" style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:13px 16px;margin:18px auto 8px;background:#102c50;color:white;border-radius:8px;max-width:400px;font:600 13px Arial,sans-serif"><span>VISITORS ONLINE NOW</span><!-- HSB Now live visitor tracking: same site key across all pages -->
+<script id="_wauhsb">var _wau=window._wau||[];window._wau=_wau;_wau.push(["small","hsbnow26live","hsb"]);</script><script async src="https://waust.at/s.js"></script>
+</div>
+</body></html>

@@ -1,0 +1,10 @@
+HORSESHOE BAY NOW DAILY WEATHER UPDATE RULES
+
+1. Obtain and verify the current NWS Austin/San Antonio point forecast for Horseshoe Bay before writing. Do not rely on generic weather feeds.
+2. Write lively, original, locally useful weather prose, but never invent model analysis, warnings, storms, observations, or credentials.
+3. Do not include rain percentages in the editorial forecast. Describe timing, confidence, and trends accurately.
+4. The homepage green card displays ONLY the latest daily forecast; replace its text on the next update.
+5. Each dated forecast is a permanent standalone page. Never overwrite or delete older forecast pages; keep them linked under WEATHER > Local Weather News and News Archive and in sitemap.xml.
+6. Keep county news links in the NEWS dropdown only; do not add Llano or Burnet County news cards to the homepage.
+7. Preserve all existing site features, layout, weather maps, articles, and links.
+8. Label weather as Horseshoe Bay Now, powered by Texas News Studio; do not claim personal analysis unless verified.
