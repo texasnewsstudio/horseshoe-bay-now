@@ -1,0 +1,1 @@
+ONLY boating lake level logic changed; water temperature metric removed. Deploy with Cloudflare Pages Functions support (Git integration or Wrangler Pages deploy), not static-only drag/drop. Official fallback link provided. LCRA data provisional; refresh follows existing weather refresh cycle. No other HTML sections changed.

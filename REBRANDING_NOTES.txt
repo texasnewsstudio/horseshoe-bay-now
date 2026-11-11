@@ -1,0 +1,1 @@
+Rebranded to Horseshoe Bay Now. Updated visible brand references, page titles, favicon, canonical URLs, page descriptions, robots.txt, sitemap.xml. Existing functionality and layout preserved. Publish at https://horseshoebaynow.com/ only after domain purchase and DNS setup. Verify site functionality after deployment.
