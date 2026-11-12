@@ -191,7 +191,7 @@ body{background:#edf2f0;color:#102b22}
 </style><style id="hsb-ticker-reliability">
 .hsb-temperature-strip{display:block!important;visibility:visible!important;min-height:54px!important;overflow:hidden!important}
 .hsb-temperature-viewport{display:block!important;overflow:hidden!important;width:100%!important}
-.hsb-temperature-track{display:flex!important;width:max-content!important;white-space:nowrap!important;animation:hsbReliableTicker 115s linear infinite!important}
+.hsb-temperature-track{display:flex!important;width:max-content!important;white-space:nowrap!important;animation:hsbReliableTicker 85s linear infinite!important}
 @keyframes hsbReliableTicker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 </style><style id="texas-airport-rotation-style">
 #texasAirportRotation{grid-column:1;min-width:0}#texasAirportRotation .head{background:#fff!important;border-bottom:1px solid #d7e3db!important}#texasAirportRotation .head h2{font:900 24px Arial,sans-serif!important;color:#123c2b!important}#texasAirportRotation .head p{color:#56705e!important}#texasAirportRotation .body{display:flex;flex-direction:column;gap:10px}.tx-airport-board{background:#073b29;color:#fff;border-radius:6px;padding:16px}.tx-airport-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:900;font-size:20px}.tx-airport-label span:last-child{font-size:13px;color:#bce2cb}.tx-airport-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}.tx-airport-values>div{border:1px solid #ffffff30;border-radius:4px;padding:10px;min-width:0}.tx-airport-values small{display:block;color:#c2dfce;font-size:10px;font-weight:800;letter-spacing:.06em}.tx-airport-values strong{display:block;margin-top:6px;font-size:20px;overflow-wrap:anywhere}.tx-airport-footer{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#d0e6d7}.tx-airport-dots{display:flex;flex-wrap:wrap;gap:5px}.tx-airport-dots button{border:1px solid #b4c9bd;border-radius:4px;background:#fff;color:#17472f;padding:5px 8px;font-size:11px;cursor:pointer}.tx-airport-dots button[aria-current="true"]{background:#073b29;color:white}@media(max-width:900px){#texasAirportRotation{grid-column:1}}@media(max-width:520px){.tx-airport-values{grid-template-columns:1fr}.tx-airport-label{font-size:17px}}
@@ -1083,19 +1083,19 @@ $('form').addEventListener('submit',e=>{e.preventDefault();search($('question').
 const cities=[["Horseshoe Bay", 30.55, -98.38], ["Marble Falls", 30.578, -98.272], ["Burnet", 30.759, -98.228], ["Kingsland", 30.659, -98.44], ["Granite Shoals", 30.588, -98.38], ["Cottonwood Shores", 30.555, -98.324], ["Meadowlakes", 30.564, -98.301], ["Spicewood", 30.475, -98.157], ["Johnson City", 30.276, -98.412], ["Blanco", 30.098, -98.422], ["Fredericksburg", 30.275, -98.872], ["Llano", 30.759, -98.675], ["Buchanan Dam", 30.739, -98.433], ["Bertram", 30.743, -98.055], ["Lampasas", 31.064, -98.181], ["Dripping Springs", 30.19, -98.087], ["Wimberley", 29.998, -98.098], ["Kerrville", 30.047, -99.14], ["Ingram", 30.077, -99.24], ["Comfort", 29.967, -98.905], ["Boerne", 29.794, -98.732], ["New Braunfels", 29.703, -98.124], ["Canyon Lake", 29.875, -98.262], ["San Marcos", 29.883, -97.941], ["Bandera", 29.726, -99.074], ["Junction", 30.49, -99.772], ["Mason", 30.749, -99.23], ["Austin", 30.267, -97.743], ["Dallas–Fort Worth", 32.85, -97.04], ["San Antonio", 29.424, -98.494], ["Houston", 29.76, -95.369], ["El Paso", 31.761, -106.485], ["Waco", 31.55, -97.147], ["Wichita Falls", 33.9137, -98.4934], ["Texarkana", 33.4251, -94.0477]];
 const track=document.getElementById('texasTemps');
 if(!track)return;
-const key='hsb-live-temp-v8',status=document.getElementById('stripUpdated');
+const key='hsb-live-temp-v9',status=document.getElementById('stripUpdated');
 const mark=(s)=>{if(status)status.textContent=s;};
 function render(readings){
  const piece=(rows,label)=>'<span class="hsb-temp-section">'+label+'</span>'+rows.map((r,i)=>'<span class="hsb-temp-item"><strong>'+r[0]+'</strong><em>'+(Number.isFinite(r[1])?Math.round(r[1])+'°F':'—')+'</em></span>').join('');
  const content=piece(readings.slice(0,27),'HILL COUNTRY')+piece(readings.slice(27),'TEXAS CITIES');
  track.innerHTML=content+content;
- track.style.animation='none';void track.offsetWidth;track.style.animation='';
+ track.style.animation='none';void track.offsetWidth;track.style.animation='hsbReliableTicker 85s linear infinite';
 }
 let cached=null;
 try{cached=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}
 if(cached&&Array.isArray(cached.readings)&&cached.readings.length===cities.length){
  render(cached.readings);mark('Last received '+new Date(cached.saved).toLocaleTimeString()+' · checking live data');
-}else{mark('Connecting to live Texas temperatures…');}
+}else{render(cities.map(c=>[c[0],null]));mark('Connecting to live Texas temperatures…');}
 let busy=false;
 async function fetchBatch(batch){
  const q=new URLSearchParams({
@@ -1142,7 +1142,7 @@ async function refresh(){
   mark('Live Texas temperatures · updated '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+(updated<cities.length?' · '+updated+'/'+cities.length+' refreshed':''));
  }catch(err){
   mark(cached?'Live service unavailable · showing last received readings':'Live temperature service unavailable · retrying');
-  if(!cached)track.textContent='Waiting for live Texas temperatures…';
+  if(!cached)render(cities.map(c=>[c[0],null]));
  }finally{busy=false}
 }
 refresh();
