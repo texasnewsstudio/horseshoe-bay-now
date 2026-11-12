@@ -78,7 +78,25 @@ function obsTime(time){return new Date(time).toLocaleTimeString('en-US',{hour:'n
 function renderConditions(){const visible=map.getBounds();const local=stripStations.filter(st=>{const station=tempStations.find(s=>s[0]===st[0]);return station&&visible.contains([station[2],station[3]])}).filter(st=>{const p=observations.get(st[0]);return p&&Date.now()-p.time<=7200000});const fresh=(local.length?local:stripStations).map(st=>observations.get(st[0])).filter(p=>p&&Date.now()-p.time<=7200000&&p.time<=Date.now()+300000);if(!fresh.length){$('obsA').textContent='CURRENT OBSERVATIONS UNAVAILABLE';$('obsB').textContent='Waiting for recent NWS station reports';return}for(const id of ['obsA','obsB']){const p=fresh[obsIndex++%fresh.length],c=p.temperature?.value,t=Number.isFinite(c)?Math.round(c*9/5+32):null,w=mph(p.windSpeed),g=mph(p.windGust),d=p.windDirection?.value,dir=Number.isFinite(d)?['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]:'VRB';const wind=w===null?'WIND N/A':w===0?'CALM':`WIND ${dir} ${w}${g!==null?' G'+g:''} MPH`;const rh=p.relativeHumidity?.value;$ (id).innerHTML=`<div class="obsMain">${esc(p.name.toUpperCase())}<span class="obsTemp" style="color:${t===null?'#fff':tempColor(t)}">${t===null?'—':t+'°F'}</span>${esc(p.textDescription||'Conditions not reported')}</div><div class="obsDetail">${esc(wind)}${Number.isFinite(rh)?' • RH '+Math.round(rh)+'%':''} • OBS ${obsTime(p.time)}</div>`}}
 setInterval(renderConditions,8000);
 function tempColor(t){if(t<=32)return '#8fd3ff';if(t<=44)return '#35bfff';if(t<=54)return '#38e0d0';if(t<=64)return '#55e36b';if(t<=74)return '#f3ea48';if(t<=84)return '#ffb12b';if(t<=94)return '#ff6b28';if(t<=104)return '#ff3131';return '#ff3fa4'}
-function renderTemps(){temps.clearLayers();if(map.getZoom()<6)return;const b=map.getBounds(),regional=map.getZoom()>=7,used=[];const candidates=[...tempStations].sort((a,b)=>Number(hillIds.has(b[0]))-Number(hillIds.has(a[0])));candidates.forEach((s,i)=>{const obs=observations.get(s[0]),city=cities.find(c=>c[0]===s[1]),pos=city?[city[1],city[2]]:[s[2],s[3]];if(!b.contains(pos)||tempData[s[0]]==null||!obs||Date.now()-obs.time>7200000)return;if(!regional&&i%2===1)return;const pixel=map.latLngToContainerPoint(pos),rect={x:pixel.x-50,y:pixel.y-54,w:100,h:42};if(used.some(r=>rect.x<r.x+r.w&&rect.x+rect.w>r.x&&rect.y<r.y+r.h&&rect.y+rect.h>r.y))return;used.push(rect);const t=tempData[s[0]],tc=tempColor(t);L.marker(pos,{interactive:false,pane:'temps',icon:L.divIcon({className:'tempLabel',html:`<span style="color:${tc}">${t}°</span>`,iconSize:[100,42],iconAnchor:[50,54]})}).addTo(temps)})}
+function renderTemps(){
+ temps.clearLayers();
+ const z=map.getZoom();
+ if(z<7)return;
+ const bounds=map.getBounds(),used=[];
+ const candidates=[...tempStations].sort((a,b)=>Number(hillIds.has(b[0]))-Number(hillIds.has(a[0])));
+ const spacing=z>=10?{w:66,h:34}:z>=9?{w:80,h:38}:z>=8?{w:94,h:44}:{w:125,h:58};
+ candidates.forEach(s=>{
+  const obs=observations.get(s[0]),city=cities.find(c=>c[0]===s[1]);
+  const pos=city?[city[1],city[2]]:[s[2],s[3]];
+  if(!bounds.contains(pos)||tempData[s[0]]==null||!obs||Date.now()-obs.time>7200000)return;
+  const pixel=map.latLngToContainerPoint(pos);
+  const rect={x:pixel.x-spacing.w/2,y:pixel.y-spacing.h,w:spacing.w,h:spacing.h};
+  if(used.some(r=>rect.x<r.x+r.w&&rect.x+rect.w>r.x&&rect.y<r.y+r.h&&rect.y+rect.h>r.y))return;
+  used.push(rect);
+  const t=tempData[s[0]];
+  L.marker(pos,{interactive:false,pane:'temps',icon:L.divIcon({className:'tempLabel',html:`<span style="color:${tempColor(t)}">${t}°</span>`,iconSize:[100,42],iconAnchor:[50,54]})}).addTo(temps);
+ });
+}
 
 // Original NWS text excerpts, clearly separated from current observations.
 const nwsOffices=[['EWX','Austin / San Antonio'],['FWD','Fort Worth'],['HGX','Houston / Galveston'],['AMA','Amarillo'],['LUB','Lubbock'],['MAF','Midland / Odessa'],['SJT','San Angelo'],['CRP','Corpus Christi'],['BRO','Brownsville'],['EPZ','El Paso'],['SHV','Shreveport / East Texas']];
