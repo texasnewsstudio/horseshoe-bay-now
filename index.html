@@ -1083,11 +1083,11 @@ $('form').addEventListener('submit',e=>{e.preventDefault();search($('question').
 const cities=[["Horseshoe Bay", 30.55, -98.38], ["Marble Falls", 30.578, -98.272], ["Burnet", 30.759, -98.228], ["Kingsland", 30.659, -98.44], ["Granite Shoals", 30.588, -98.38], ["Cottonwood Shores", 30.555, -98.324], ["Meadowlakes", 30.564, -98.301], ["Spicewood", 30.475, -98.157], ["Johnson City", 30.276, -98.412], ["Blanco", 30.098, -98.422], ["Fredericksburg", 30.275, -98.872], ["Llano", 30.759, -98.675], ["Buchanan Dam", 30.739, -98.433], ["Bertram", 30.743, -98.055], ["Lampasas", 31.064, -98.181], ["Dripping Springs", 30.19, -98.087], ["Wimberley", 29.998, -98.098], ["Kerrville", 30.047, -99.14], ["Ingram", 30.077, -99.24], ["Comfort", 29.967, -98.905], ["Boerne", 29.794, -98.732], ["New Braunfels", 29.703, -98.124], ["Canyon Lake", 29.875, -98.262], ["San Marcos", 29.883, -97.941], ["Bandera", 29.726, -99.074], ["Junction", 30.49, -99.772], ["Mason", 30.749, -99.23], ["Austin", 30.267, -97.743], ["Dallas–Fort Worth", 32.85, -97.04], ["San Antonio", 29.424, -98.494], ["Houston", 29.76, -95.369], ["El Paso", 31.761, -106.485], ["Waco", 31.55, -97.147], ["Wichita Falls", 33.9137, -98.4934], ["Texarkana", 33.4251, -94.0477]];
 const track=document.getElementById('texasTemps');
 if(!track)return;
-const key='hsb-live-temp-v7',status=document.getElementById('stripUpdated');
+const key='hsb-live-temp-v8',status=document.getElementById('stripUpdated');
 const mark=(s)=>{if(status)status.textContent=s;};
 function render(readings){
  const piece=(rows,label)=>'<span class="hsb-temp-section">'+label+'</span>'+rows.map((r,i)=>'<span class="hsb-temp-item"><strong>'+r[0]+'</strong><em>'+(Number.isFinite(r[1])?Math.round(r[1])+'°F':'—')+'</em></span>').join('');
- const texas=readings.slice(27);const priority=texas.filter(r=>r[0]==='Wichita Falls'||r[0]==='Texarkana');const rest=texas.filter(r=>r[0]!=='Wichita Falls'&&r[0]!=='Texarkana');const content=piece([...priority,...rest],'TEXAS CITIES')+piece(readings.slice(0,27),'HILL COUNTRY');
+ const content=piece(readings.slice(0,27),'HILL COUNTRY')+piece(readings.slice(27),'TEXAS CITIES');
  track.innerHTML=content+content;
  track.style.animation='none';void track.offsetWidth;track.style.animation='';
 }
