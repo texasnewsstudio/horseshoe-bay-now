@@ -1,15 +1,15 @@
 name: Automatic sitemap update
+# Run once daily, or manually. Individual article commits no longer
+# create competing jobs and repeated failure notifications.
 on:
-  push:
-    branches: [main]
-    paths:
-      - '**/*.html'
-      - 'scripts/generate_sitemap.py'
   schedule:
     - cron: '23 9 * * *'
   workflow_dispatch:
 permissions:
   contents: write
+concurrency:
+  group: horseshoe-bay-now-sitemap
+  cancel-in-progress: false
 jobs:
   sitemap:
     runs-on: ubuntu-latest
@@ -17,14 +17,29 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Generate sitemap
-        run: python3 scripts/generate_sitemap.py
-      - name: Commit changed sitemap
+          persist-credentials: true
+      - name: Generate and publish latest sitemap
+        shell: bash
         run: |
-          if ! git diff --quiet -- sitemap.xml; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git checkout -B main origin/main
+            python3 scripts/generate_sitemap.py
             git add sitemap.xml
+            if git diff --cached --quiet; then
+              echo "Sitemap already up to date."
+              exit 0
+            fi
             git commit -m "Auto-update sitemap"
-            git push
-          fi
+            if git push origin HEAD:main; then
+              echo "Sitemap published successfully."
+              exit 0
+            fi
+            echo "Concurrent update: retrying ($attempt/5)."
+            sleep 3
+          done
+          echo "Sitemap publish failed after retries." >&2
+          exit 1
