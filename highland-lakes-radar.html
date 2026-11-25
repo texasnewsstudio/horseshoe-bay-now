@@ -75,6 +75,18 @@
 #conditionsStrip .obsCard{background:#e6edf5;color:#315c86}
 #conditionsStrip .obsDetail{color:#315c86}
 #conditionsStrip .obsTemp{color:#315c86!important}
+</style><style id="hbn-compact-weather-strip">
+#map{top:40px!important}.topbar{height:40px!important;padding:0!important;background:#10283b!important;text-shadow:none!important;overflow:hidden}
+#conditionsStrip,#nwsStrip,#sub{position:absolute!important;inset:0!important;height:40px!important;margin:0!important;border:0!important;box-sizing:border-box;align-items:center}
+#conditionsStrip,#sub{visibility:hidden}#nwsStrip{visibility:visible}
+.topbar[data-view="conditions"] #conditionsStrip,.topbar[data-view="radar"] #sub{visibility:visible}
+.topbar[data-view="conditions"] #nwsStrip,.topbar[data-view="radar"] #nwsStrip{visibility:hidden}
+#conditionsStrip{gap:2px}#conditionsStrip .obsCard{height:40px;padding:2px 6px}#conditionsStrip .obsMain{font-size:12px!important}#conditionsStrip .obsDetail{font-size:10px!important;margin-top:1px}
+.stripTag,#nwsTag{height:40px;flex-basis:88px;font-size:10px}
+#nwsText{padding:1px 7px}#nwsSource{font-size:10px}#nwsSentence{font-size:12px;line-height:1.15}
+#sub{display:flex;justify-content:center;gap:5px;font-size:11px;white-space:nowrap;overflow:hidden}#scanDot{flex:none;width:7px;height:7px;margin:0}
+#regionBug{top:52px!important}#layerDock{top:50px!important}
+@media(max-width:720px){#obsB{display:none}#sub #clock{display:none}#sub{font-size:10px}}
 </style></head><body>
 <div id="mapWrap"><div id="map"></div><div id="hud"><div class="topbar"><div id="spcStatus" aria-live="polite">DAY 1 OUTLOOK • LOADING TEXAS RISK</div><div id="conditionsStrip"><div class="stripTag">CURRENT<br>CONDITIONS</div><div id="obsA" class="obsCard">CONNECTING NWS OBSERVATIONS…</div><div id="obsB" class="obsCard"></div></div><div id="nwsStrip"><div id="nwsTag" class="stripTag">NWS TEXAS</div><div id="nwsWindow"><div id="nwsText">Loading official NWS weather updates…</div></div></div><div id="sub"><span id="scanDot"></span><span id="radarTime">RADAR • CONNECTING</span> &nbsp;•&nbsp; <span id="clock"></span></div></div><div id="regionBug">TEXAS HILL COUNTRY</div><div id="load">CONNECTING LIVE WEATHER DATA…</div></div></div>
 <nav id="layerDock" aria-label="Weather map layers"><div class="drawer"><h2>MAP OVERLAYS</h2><p>Hover over the left edge to open. Choose the official weather layers to display.</p><h3>NOAA SPC OUTLOOKS</h3>
@@ -363,4 +375,6 @@ map.on('moveend',()=>{renderCityLabels();detailLayers();renderTemps();renderCond
 function clock(){$('clock').textContent=new Date().toLocaleString('en-US',{month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZone:'America/Chicago',timeZoneName:'short'})}
 clock();setInterval(clock,1000);refreshAlerts();setInterval(refreshAlerts,90000);updateTemps();setInterval(updateTemps,300000);detailLayers();setTimeout(restartRadar,500);/* Automatic camera tour disabled: visitors control the map. */
 })();
+</script><script id="hbn-compact-rotation">
+(()=>{const bar=document.querySelector('.topbar'),tag=document.getElementById('nwsTag');let index=0;const views=['nws','conditions','radar'];function rotate(){const urgent=tag.textContent.trim()==='NWS ALERT';bar.dataset.view=urgent?'nws':views[index++%views.length]}rotate();setInterval(rotate,8000);new MutationObserver(()=>{if(tag.textContent.trim()==='NWS ALERT')bar.dataset.view='nws'}).observe(tag,{childList:true,characterData:true,subtree:true})})();
 </script></body></html>
