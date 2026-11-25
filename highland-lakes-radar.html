@@ -93,9 +93,18 @@
 .stripTag,#nwsTag{background:#234c70!important;color:#fff!important}
 #nwsTag[data-warning="true"]{background:#a51f2b!important}
 #scanDot{display:none!important}
+</style><style id="hbn-optional-updates">
+#map{top:0!important}body.updates-open #map{top:40px!important}
+.topbar{visibility:hidden}body.updates-open .topbar{visibility:visible}
+body:not(.updates-open) .topbar #conditionsStrip,body:not(.updates-open) .topbar #nwsStrip,body:not(.updates-open) .topbar #sub{visibility:hidden!important}
+#updatesToggle{position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:1200;pointer-events:auto;background:#234c70;color:#fff;border:1px solid #789bb8;border-top:0;border-radius:0 0 5px 5px;padding:4px 12px;font:700 11px Arial;cursor:pointer;white-space:nowrap}
+body.updates-open #updatesToggle{top:40px}
+#layerDock{top:35px!important}body.updates-open #layerDock{top:75px!important}
+#regionBug{top:35px!important}body.updates-open #regionBug{top:75px!important}
+.leaflet-control-attribution{font-size:9px!important}
 </style></head><body>
-<div id="mapWrap"><div id="map"></div><div id="hud"><div class="topbar"><div id="spcStatus" aria-live="polite">DAY 1 OUTLOOK • LOADING TEXAS RISK</div><div id="conditionsStrip"><div class="stripTag">CURRENT<br>CONDITIONS</div><div id="obsA" class="obsCard">CONNECTING NWS OBSERVATIONS…</div><div id="obsB" class="obsCard"></div></div><div id="nwsStrip"><div id="nwsTag" class="stripTag">NWS TEXAS</div><div id="nwsWindow"><div id="nwsText">Loading official NWS weather updates…</div></div></div><div id="sub"><span id="scanDot"></span><span id="radarTime">RADAR • CONNECTING</span> &nbsp;•&nbsp; <span id="clock"></span></div></div><div id="regionBug">TEXAS HILL COUNTRY</div><div id="load">CONNECTING LIVE WEATHER DATA…</div></div></div>
-<nav id="layerDock" aria-label="Weather map layers"><div class="drawer"><h2>MAP OVERLAYS</h2><p>Hover over the left edge to open. Choose the official weather layers to display.</p><h3>NOAA SPC OUTLOOKS</h3>
+<div id="mapWrap"><div id="map"></div><div id="hud"><button id="updatesToggle" type="button" aria-expanded="false" aria-controls="weatherUpdates">Weather Updates ▾</button><div class="topbar" id="weatherUpdates"><div id="spcStatus" aria-live="polite">DAY 1 OUTLOOK • LOADING TEXAS RISK</div><div id="conditionsStrip"><div class="stripTag">CURRENT<br>CONDITIONS</div><div id="obsA" class="obsCard">CONNECTING NWS OBSERVATIONS…</div><div id="obsB" class="obsCard"></div></div><div id="nwsStrip"><div id="nwsTag" class="stripTag">NWS TEXAS</div><div id="nwsWindow"><div id="nwsText">Loading official NWS weather updates…</div></div></div><div id="sub"><span id="scanDot"></span><span id="radarTime">RADAR • CONNECTING</span> &nbsp;•&nbsp; <span id="clock"></span></div></div><div id="regionBug">TEXAS HILL COUNTRY</div><div id="load">CONNECTING LIVE WEATHER DATA…</div></div></div>
+<nav id="layerDock" aria-label="Weather map layers"><div class="drawer"><h2>MAP OVERLAYS</h2><p>Hover over the left edge to open. Choose the official weather layers to display.</p><h3>BASE MAP</h3><label><input type="radio" name="basemap" value="dark" checked> Dark gray (default)</label><label><input type="radio" name="basemap" value="light"> Light gray</label><label><input type="radio" name="basemap" value="street"> Street map</label><label><input type="radio" name="basemap" value="terrain"> Topographic</label><label><input type="radio" name="basemap" value="satellite"> Satellite imagery</label><h3>NOAA SPC OUTLOOKS</h3>
 <label><input type="checkbox" data-layer="spc1" checked> Day 1 severe risk</label><label><input type="checkbox" data-layer="spc2"> Day 2 severe risk</label><label><input type="checkbox" data-layer="spc3"> Day 3 severe risk</label><label><input type="checkbox" data-layer="tornado"> Day 1 tornado probability</label><label><input type="checkbox" data-layer="wind"> Day 1 wind probability</label><label><input type="checkbox" data-layer="hail"> Day 1 hail probability</label>
 <h3>LIVE WEATHER</h3><label><input type="checkbox" data-layer="radar" checked> Still high-resolution NEXRAD radar</label><label><input type="checkbox" data-layer="alerts" checked> NWS warnings / watches</label><label><input type="checkbox" data-layer="temps" checked> Airport temperatures</label>
 <h3>SATELLITE & RAINFALL</h3>
@@ -117,7 +126,7 @@ const map=L.map('map',{zoomControl:false,attributionControl:false,dragging:true,
 map.setView([31.1,-99.2],6,{animate:false});
  L.control.zoom({position:"bottomleft"}).addTo(map);
 const panes={spc:300,radar:320,bounds:390,stateBorders:405,alerts:420,roads:445,labels:470,temps:480};Object.entries(panes).forEach(([n,z])=>{map.createPane(n);map.getPane(n).style.zIndex=z;map.getPane(n).style.pointerEvents='none'});
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,opacity:1,keepBuffer:3}).addTo(map);
+const baseMaps={dark:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,opacity:1,keepBuffer:3}),light:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:16,maxZoom:19}),street:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),terrain:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}),satellite:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19})};let activeBase='dark';baseMaps.dark.addTo(map);L.control.attribution({position:'bottomleft',prefix:false}).addAttribution('Basemap: Esri and contributors').addTo(map);document.querySelectorAll('input[name="basemap"]').forEach(input=>input.addEventListener('change',()=>{if(!input.checked||!baseMaps[input.value])return;map.removeLayer(baseMaps[activeBase]);activeBase=input.value;baseMaps[activeBase].addTo(map);baseMaps[activeBase].bringToBack()}));const updatesButton=document.getElementById('updatesToggle');updatesButton.addEventListener('click',()=>{const open=document.body.classList.toggle('updates-open');updatesButton.setAttribute('aria-expanded',String(open));updatesButton.textContent=open?'Weather Updates ▴':'Weather Updates ▾';map.invalidateSize({pan:false})});
 const county=L.tileLayer.wms('https://tigerweb.geo.census.gov/arcgis/services/TIGERweb/tigerWMS_Current/MapServer/WMSServer',{layers:'80,82',format:'image/png',transparent:true,version:'1.3.0',opacity:1,pane:'bounds',uppercase:true}).addTo(map);
 // High-contrast Census state boundaries, drawn above radar and below warnings.
 const stateHalo=L.geoJSON([],{pane:'stateBorders',interactive:false,style:{color:'#152536',weight:4.5,opacity:.95,fill:false}}).addTo(map);
@@ -366,7 +375,7 @@ function toggleMapLayer(key,on){
  for(const l of groups[key]||[]){if(on&&!map.hasLayer(l))map.addLayer(l);else if(!on&&map.hasLayer(l))map.removeLayer(l)}
  if(key==='temps'&&on)renderTemps();
 }
-document.querySelectorAll('#layerDock input').forEach(i=>i.addEventListener('change',()=>{
+document.querySelectorAll('#layerDock input[data-layer]').forEach(i=>i.addEventListener('change',()=>{
  const k=i.dataset.layer;
  if(k.startsWith('spc')||['tornado','wind','hail'].includes(k)){
  if(i.checked)chooseSPC(k);else {activeSPC='none';spcRequest++;if(map.hasLayer(spcLayer))map.removeLayer(spcLayer);Object.values(spcExtra).forEach(l=>{if(map.hasLayer(l))map.removeLayer(l)});statusLayer('SPC overlays hidden.');}
